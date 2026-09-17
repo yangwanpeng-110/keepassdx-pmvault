@@ -1,0 +1,556 @@
+/*
+ * Copyright 2025 Cali-95 modified by Jeremy Jamet / Kunzisoft
+ *
+ * This file is part of KeePassDX.
+ *
+ *  KeePassDX is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  KeePassDX is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with KeePassDX.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+package com.kunzisoft.encrypt
+
+import android.content.pm.SigningInfo
+import android.os.Build
+import android.util.AndroidException
+import android.util.Log
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
+import org.bouncycastle.jcajce.interfaces.MLDSAPrivateKey
+import org.bouncycastle.jcajce.interfaces.MLDSAPublicKey
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPrivateKey
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPublicKey
+import org.bouncycastle.jcajce.provider.asymmetric.mldsa.BCMLDSAPrivateKey
+import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.openssl.PEMParser
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator
+import org.bouncycastle.util.BigIntegers
+import org.bouncycastle.util.io.pem.PemWriter
+import java.io.CharArrayReader
+import java.io.CharArrayWriter
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.MessageDigest
+import java.security.PrivateKey
+import java.security.PublicKey
+import java.security.Security
+import java.security.Signature
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.security.spec.AlgorithmParameterSpec
+import java.security.spec.ECGenParameterSpec
+import java.util.Locale
+
+object Signature {
+
+    // see at https://www.iana.org/assignments/cose/cose.xhtml
+    const val ES256_ALGORITHM: Long = -7
+    const val RS256_ALGORITHM: Long = -257
+    private const val RS256_KEY_SIZE_IN_BITS = 2048
+
+    const val ED_DSA_ALGORITHM: Long = -8
+
+    const val ML_DSA_44_ALGORITHM: Long = -48
+    const val ML_DSA_65_ALGORITHM: Long = -49
+    const val ML_DSA_87_ALGORITHM: Long = -50
+
+    private val ML_DSA_ALGORITHM_LIST = listOf(ML_DSA_44_ALGORITHM, ML_DSA_65_ALGORITHM, ML_DSA_87_ALGORITHM)
+
+    // https://www.iana.org/assignments/cose/cose.xhtml#key-common-parameters
+    private const val COSE_KEY_TYPE_LABEL = 1
+    private const val COSE_ALGORITHM_LABEL = 3
+
+    private const val BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----"
+    private const val BEGIN_PRIVATE_KEY_LINE_BREAK = "$BEGIN_PRIVATE_KEY\n"
+    private const val END_PRIVATE_KEY = "-----END PRIVATE KEY-----"
+    private const val END_PRIVATE_KEY_LINE_BREAK = "\n$END_PRIVATE_KEY"
+
+    // OIDs for algorithms
+    private const val OID_RSA = "1.2.840.113549.1.1.1"
+    private const val OID_EC = "1.2.840.10045.2.1"
+    private const val OID_ED25519 = "1.3.101.112"
+    private const val OID_ML_DSA_44 = "2.16.840.1.101.3.4.3.17"
+    private const val OID_ML_DSA_65 = "2.16.840.1.101.3.4.3.18"
+    private const val OID_ML_DSA_87 = "2.16.840.1.101.3.4.3.19"
+
+    private val OID_ML_DSA_LIST = listOf(OID_ML_DSA_44, OID_ML_DSA_65, OID_ML_DSA_87)
+
+    private const val BOUNCY_CASTLE_PROVIDER_NAME = BouncyCastleProvider.PROVIDER_NAME
+
+    init {
+        Security.removeProvider(BOUNCY_CASTLE_PROVIDER_NAME)
+        Security.addProvider(BouncyCastleProvider())
+    }
+
+    fun sign(privateKeyPem: CharArray, message: ByteArray): ByteArray {
+        val privateKey = createPrivateKey(privateKeyPem)
+        val algorithmSignature = when (val algorithmKey = privateKey.algorithm) {
+            "EC", "ECDSA", OID_EC -> "SHA256withECDSA"
+            "RSA", OID_RSA -> "SHA256withRSA"
+            "Ed25519", OID_ED25519 -> "Ed25519"
+            "ML-DSA-44", OID_ML_DSA_44 -> "ML-DSA-44"
+            "ML-DSA-65", OID_ML_DSA_65 -> "ML-DSA-65"
+            "ML-DSA-87", OID_ML_DSA_87 -> "ML-DSA-87"
+            else -> throw SecurityException("$algorithmKey algorithm is unknown")
+        }
+        val sig = Signature.getInstance(
+            algorithmSignature,
+            BOUNCY_CASTLE_PROVIDER_NAME
+        )
+        sig.initSign(privateKey)
+        sig.update(message)
+        return sig.sign()
+    }
+
+    /**
+     * Creates a PrivateKey from a PEM CharArray.
+     * Note: This function zeroes out the input [privateKeyPem] array after processing.
+     */
+    fun createPrivateKey(privateKeyPem: CharArray): PrivateKey {
+        var workingBuffer = privateKeyPem
+        var tempBuffer: CharArray? = null
+        try {
+            // Check if normalization is needed without creating strings first
+            val needsPrefixFix = !workingBuffer.startsWith(BEGIN_PRIVATE_KEY_LINE_BREAK) &&
+                    workingBuffer.startsWith(BEGIN_PRIVATE_KEY)
+            val needsSuffixFix = !workingBuffer.endsWith(END_PRIVATE_KEY_LINE_BREAK) &&
+                    workingBuffer.endsWith(END_PRIVATE_KEY)
+
+            if (needsPrefixFix || needsSuffixFix) {
+                val pemString = String(workingBuffer)
+                var normalized = pemString
+                if (needsPrefixFix) {
+                    normalized = BEGIN_PRIVATE_KEY_LINE_BREAK + normalized.removePrefix(BEGIN_PRIVATE_KEY)
+                }
+                if (needsSuffixFix) {
+                    normalized = normalized.removeSuffix(END_PRIVATE_KEY) + END_PRIVATE_KEY_LINE_BREAK
+                }
+                tempBuffer = normalized.toCharArray()
+                workingBuffer = tempBuffer
+            }
+
+            return PEMParser(CharArrayReader(workingBuffer)).use { pemParser ->
+                readWithPemParser(pemParser)
+            }
+        } finally {
+            // Securely wipe the input and any temporary buffers from memory
+            privateKeyPem.fill('0')
+            tempBuffer?.fill('0')
+        }
+    }
+
+    private fun readWithPemParser(pemParser: PEMParser): PrivateKey {
+        val obj = pemParser.readObject()
+        val privateKeyInfo = obj as? PrivateKeyInfo
+            ?: throw SecurityException("Invalid private key format or encrypted key not supported (type: ${obj?.javaClass?.name})")
+
+        // necessary to enforce the use of the Bouncy Castle class
+        if (privateKeyInfo.privateKeyAlgorithm.algorithm.id in OID_ML_DSA_LIST) {
+            return BCMLDSAPrivateKey(privateKeyInfo)
+        }
+
+        return JcaPEMKeyConverter().getPrivateKey(privateKeyInfo)
+    }
+
+    fun convertPrivateKeyToPem(privateKeyIn: PrivateKey): CharArray {
+        var privateKey = privateKeyIn
+
+        // for ML-DSA
+        if (privateKey is MLDSAPrivateKey) {
+            privateKey.seed ?: throw SecurityException("private ML-DSA does not contain the seed")
+
+            // the pem is only 4 lines long, instead of 56, 87 or 105 lines respectively
+            val preferSeedOnlyEnabled = true
+            privateKey = privateKey.getPrivateKey(preferSeedOnlyEnabled)
+        }
+
+        // for ED25519
+        var useV1Info = false
+        if (privateKey is BCEdDSAPrivateKey) {
+            // to generate PEM, which are compatible to KeepassXC
+            useV1Info = true
+        }
+        System.setProperty(
+            "org.bouncycastle.pkcs8.v1_info_only",
+            useV1Info.toString().lowercase()
+        )
+
+        val noOutputEncryption = null
+        val pemObjectGenerator = JcaPKCS8Generator(privateKey, noOutputEncryption)
+
+        val writer = CharArrayWriter()
+        val pemWriter = PemWriter(writer)
+        pemWriter.writeObject(pemObjectGenerator)
+        pemWriter.close()
+
+        val privateKeyInPem = writer.toCharArray()
+        writer.close()
+
+        var start = 0
+        while (start < privateKeyInPem.size && privateKeyInPem[start] <= ' ') {
+            start++
+        }
+        var end = privateKeyInPem.size
+        while (end > start && privateKeyInPem[end - 1] <= ' ') {
+            end--
+        }
+
+        return if (start == 0 && end == privateKeyInPem.size) {
+            privateKeyInPem
+        } else {
+            val trimmed = privateKeyInPem.copyOfRange(start, end)
+            privateKeyInPem.fill('0') // Wipe the untrimmed original
+            trimmed
+        }
+    }
+
+    private fun CharArray.startsWith(prefix: String): Boolean {
+        if (size < prefix.length) return false
+        for (i in prefix.indices) {
+            if (this[i] != prefix[i]) return false
+        }
+        return true
+    }
+
+    private fun CharArray.endsWith(suffix: String): Boolean {
+        if (size < suffix.length) return false
+        for (i in suffix.indices) {
+            if (this[size - suffix.length + i] != suffix[i]) return false
+        }
+        return true
+    }
+
+    fun generateKeyPair(keyTypeIdList: List<Long>): Pair<KeyPair, Long>? {
+
+        for (typeId in keyTypeIdList) {
+            when (typeId) {
+                ES256_ALGORITHM -> {
+                    return generateKeyPairAlgorithm(
+                        algorithm = "EC",
+                        algorithmTypeId = typeId,
+                        parameterSpec = ECGenParameterSpec("secp256r1")
+                    )
+                }
+                RS256_ALGORITHM -> {
+                    return generateKeyPairAlgorithm(
+                        algorithm = "RSA",
+                        algorithmTypeId = typeId,
+                        keySize = RS256_KEY_SIZE_IN_BITS
+                    )
+                }
+                ED_DSA_ALGORITHM -> {
+                    return generateKeyPairAlgorithm(
+                        algorithm = "Ed25519",
+                        algorithmTypeId = typeId
+                    )
+                }
+                ML_DSA_44_ALGORITHM -> {
+                    return generateKeyPairAlgorithm(
+                        algorithm = "ML-DSA-44",
+                        algorithmTypeId = typeId
+                    )
+                }
+                ML_DSA_65_ALGORITHM -> {
+                    return generateKeyPairAlgorithm(
+                        algorithm = "ML-DSA-65",
+                        algorithmTypeId = typeId
+                    )
+                }
+                ML_DSA_87_ALGORITHM -> {
+                    return generateKeyPairAlgorithm(
+                        algorithm = "ML-DSA-87",
+                        algorithmTypeId = typeId
+                    )
+                }
+            }
+        }
+
+        Log.e(this::class.java.simpleName, "generateKeyPair: no known key type id found")
+        return null
+    }
+
+    private fun generateKeyPairAlgorithm(
+        algorithm: String,
+        algorithmTypeId: Long,
+        parameterSpec: AlgorithmParameterSpec? = null,
+        keySize: Int? = null,
+    ): Pair<KeyPair, Long> {
+        val keyPairGen = KeyPairGenerator.getInstance(algorithm, BOUNCY_CASTLE_PROVIDER_NAME)
+        parameterSpec?.let {
+            keyPairGen.initialize(parameterSpec)
+        } ?: keySize?.let {
+            keyPairGen.initialize(keySize)
+        }
+        val keyPair = keyPairGen.genKeyPair()
+        return Pair(keyPair, algorithmTypeId)
+    }
+
+    fun convertPublicKey(publicKeyIn: PublicKey, keyTypeId: Long): ByteArray? {
+        if (keyTypeId == ES256_ALGORITHM) {
+            if (publicKeyIn is BCECPublicKey) {
+                publicKeyIn.setPointFormat("UNCOMPRESSED")
+                return publicKeyIn.encoded
+            }
+        } else if (keyTypeId == RS256_ALGORITHM) {
+            return publicKeyIn.encoded
+        } else if (keyTypeId == ED_DSA_ALGORITHM) {
+            return publicKeyIn.encoded
+        } else if (keyTypeId in ML_DSA_ALGORITHM_LIST) {
+            return publicKeyIn.encoded
+        }
+        Log.e(this::class.java.simpleName, "convertPublicKey: unknown key type id found")
+        return null
+    }
+
+    fun convertPublicKeyToMap(publicKeyIn: PublicKey, keyTypeId: Long): Map<Int, Any>? {
+
+        when (keyTypeId) {
+            ES256_ALGORITHM -> {
+                if (publicKeyIn !is BCECPublicKey) {
+                    Log.e(
+                        this::class.java.simpleName,
+                        "publicKey object has wrong type for keyTypeId $ES256_ALGORITHM: ${publicKeyIn.javaClass.canonicalName}"
+                    )
+                    return null
+                }
+                // constants see at https://w3c.github.io/webauthn/#example-bdbd14cc
+                val publicKeyMap = mutableMapOf<Int, Any>()
+
+                val es256KeyTypeId = 2
+                val es256EllipticCurveP256Id = 1
+
+                publicKeyMap[COSE_KEY_TYPE_LABEL] = es256KeyTypeId
+                publicKeyMap[COSE_ALGORITHM_LABEL] = ES256_ALGORITHM
+
+                publicKeyMap[-1] = es256EllipticCurveP256Id
+
+                val ecPoint = publicKeyIn.q
+                publicKeyMap[-2] = ecPoint.xCoord.encoded
+                publicKeyMap[-3] = ecPoint.yCoord.encoded
+
+                return publicKeyMap
+
+            }
+            RS256_ALGORITHM -> {
+                if (publicKeyIn !is BCRSAPublicKey) {
+                    Log.e(
+                        this::class.java.simpleName,
+                        "publicKey object has wrong type for keyTypeId $RS256_ALGORITHM: ${publicKeyIn.javaClass.canonicalName}"
+                    )
+                    return null
+                }
+
+                // constants see at https://w3c.github.io/webauthn/#example-8dfabc00
+
+                val rs256KeySizeInBytes = RS256_KEY_SIZE_IN_BITS / 8
+                val rs256KeyTypeId = 3
+                val rs256ExponentSizeInBytes = 3
+
+                val publicKeyMap = mutableMapOf<Int, Any>()
+                publicKeyMap[COSE_KEY_TYPE_LABEL] = rs256KeyTypeId
+                publicKeyMap[COSE_ALGORITHM_LABEL] = RS256_ALGORITHM
+                publicKeyMap[-1] =
+                    BigIntegers.asUnsignedByteArray(rs256KeySizeInBytes, publicKeyIn.modulus)
+                publicKeyMap[-2] =
+                    BigIntegers.asUnsignedByteArray(
+                        rs256ExponentSizeInBytes,
+                        publicKeyIn.publicExponent
+                    )
+                return publicKeyMap
+            }
+            ED_DSA_ALGORITHM -> {
+                if (publicKeyIn !is BCEdDSAPublicKey) {
+                    Log.e(
+                        this::class.java.simpleName,
+                        "publicKey object has wrong type for keyTypeId $ED_DSA_ALGORITHM: ${publicKeyIn.javaClass.canonicalName}"
+                    )
+                    return null
+                }
+
+                val publicKeyMap = mutableMapOf<Int, Any>()
+
+                // https://www.rfc-editor.org/rfc/rfc9053#name-key-object-parameters
+                val octetKeyPairId = 1
+
+                val curveLabel = -1
+                val ed25519CurveId = 6
+
+                val publicKeyLabel = -2
+
+                publicKeyMap[COSE_KEY_TYPE_LABEL] = octetKeyPairId
+                publicKeyMap[COSE_ALGORITHM_LABEL] = ED_DSA_ALGORITHM
+
+                publicKeyMap[curveLabel] = ed25519CurveId
+
+                val length = Ed25519PublicKeyParameters.KEY_SIZE
+
+                publicKeyMap[publicKeyLabel] = BigIntegers.asUnsignedByteArray(
+                    length,
+                    BigIntegers.fromUnsignedByteArray(publicKeyIn.pointEncoding)
+                )
+
+                return publicKeyMap
+            }
+            in ML_DSA_ALGORITHM_LIST -> {
+                if (publicKeyIn !is MLDSAPublicKey) {
+                    Log.e(
+                        this::class.java.simpleName,
+                        "publicKey object has wrong type for keyTypeId $keyTypeId: ${publicKeyIn.javaClass.canonicalName}"
+                    )
+                    return null
+                }
+
+                val publicKeyMap = mutableMapOf<Int, Any>()
+
+                // https://www.iana.org/assignments/cose/cose.xhtml#key-common-parameters
+                // https://datatracker.ietf.org/doc/html/rfc9964
+                publicKeyMap[COSE_KEY_TYPE_LABEL] = 7 // Algorithm Key Pairs AKP
+                publicKeyMap[COSE_ALGORITHM_LABEL] = keyTypeId
+
+                // Check public key
+                val encodedPublicKey = convertPublicKey(publicKeyIn, keyTypeId)
+                if (encodedPublicKey == null) {
+                    val msg = "the encoded ML-DSA public key for COSE is null"
+                    Log.e(this::class.java.simpleName, msg)
+                    return null
+                }
+
+                // -1: raw public key
+                publicKeyMap[-1] = publicKeyIn.publicData
+
+                return publicKeyMap
+            }
+            else -> {
+                Log.e(this::class.java.simpleName, "convertPublicKeyToMap: no known key type id found")
+                return null
+            }
+        }
+    }
+
+    const val SIGNATURE_DELIMITER = "##SIG##"
+
+    /**
+     * Converts a Signature object into its SHA-256 fingerprint string.
+     * The fingerprint is typically represented as uppercase hex characters separated by colons.
+     */
+    private fun signatureToSha256Fingerprint(signature: android.content.pm.Signature): String? {
+        return try {
+            val certificateFactory = CertificateFactory.getInstance("X.509")
+            val x509Certificate = certificateFactory.generateCertificate(
+                signature.toByteArray().inputStream()
+            ) as X509Certificate
+
+            val messageDigest = MessageDigest.getInstance("SHA-256")
+            val digest = messageDigest.digest(x509Certificate.encoded)
+
+            // Format as colon-separated HEX uppercase string
+            digest.joinToString(separator = ":") { byte -> "%02X".format(byte) }
+                .uppercase(Locale.US)
+        } catch (e: Exception) {
+            Log.e("SigningInfoUtil", "Error converting signature to SHA-256 fingerprint", e)
+            null
+        }
+    }
+
+    /**
+     * Retrieves all relevant SHA-256 signature fingerprints for a given package.
+     *
+     * @return A List of SHA-256 fingerprint strings, or null if an error occurs or no signatures are found.
+     */
+    fun SigningInfo.getAllFingerprints(): Set<String>? {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
+                throw AndroidException("API level ${Build.VERSION.SDK_INT} not supported")
+            val signatures = mutableSetOf<String>()
+            // Includes past and current keys if rotation occurred. This is generally preferred.
+            signingCertificateHistory?.forEach { signature ->
+                signatureToSha256Fingerprint(signature)?.let { signatures.add(it) }
+            }
+            // If only one signer and history is empty (e.g. new app), this might be needed.
+            // Or if multiple signers are explicitly used for the APK content.
+            if (hasMultipleSigners()) {
+                apkContentsSigners?.forEach { signature ->
+                    signatureToSha256Fingerprint(signature)?.let { signatures.add(it) }
+                }
+            } else { // Fallback for single signer if history was somehow null/empty
+                signingCertificateHistory?.firstOrNull()?.let {
+                    signatureToSha256Fingerprint(it)?.let { fp -> signatures.add(fp) }
+                }
+            }
+            return if (signatures.isEmpty()) null else signatures
+        } catch (e: Exception) {
+            Log.e(Signature::class.java.simpleName, "Error getting signatures", e)
+            return null
+        }
+    }
+
+    /**
+     * Combines a list of signatures into a single string for database storage.
+     *
+     * @return A single string with fingerprints joined by a ##SIG## delimiter,
+     * or null if the input list is null or empty.
+     */
+    fun SigningInfo.getApplicationFingerprints(): String? {
+        val fingerprints = getAllFingerprints()
+        if (fingerprints.isNullOrEmpty()) {
+            return null
+        }
+        return fingerprints.singleLineFingerprints()
+    }
+
+    /**
+     * Combines a set of signatures into a single string for database storage.
+     */
+    fun Set<String>.singleLineFingerprints(): String {
+        return this.joinToString(SIGNATURE_DELIMITER)
+    }
+
+    /**
+     * Transforms a colon-separated hex fingerprint string into a URL-safe,
+     * padding-removed Base64 string, mimicking the Python behavior:
+     * base64.urlsafe_b64encode(binascii.a2b_hex(fingerprint.replace(':', ''))).decode('utf8').replace('=', '')
+     *
+     * Only check the first footprint if there are several delimited by ##SIG##.
+     *
+     * @param fingerprint The colon-separated hex fingerprint string (e.g., "91:F7:CB:...").
+     * @return The Android App Origin string.
+     * @throws IllegalArgumentException if the hex string (after removing colons) has an odd length
+     *         or contains non-hex characters.
+     */
+    fun fingerprintToUrlSafeBase64(fingerprint: String): String {
+        val firstFingerprint = fingerprint.split(SIGNATURE_DELIMITER).firstOrNull()?.trim()
+        if (firstFingerprint.isNullOrEmpty()) {
+            throw IllegalArgumentException("Invalid fingerprint $fingerprint")
+        }
+        val hexStringNoColons = firstFingerprint.replace(":", "")
+        if (hexStringNoColons.length % 2 != 0) {
+            throw IllegalArgumentException("Hex string must have an even number of characters: $hexStringNoColons")
+        }
+        if (hexStringNoColons.length != 64) {
+            throw IllegalArgumentException("Expected a 64-character hex string for a SHA-256 hash, but got ${hexStringNoColons.length} characters.")
+        }
+        val hashBytes = ByteArray(hexStringNoColons.length / 2)
+        for (i in hashBytes.indices) {
+            try {
+                val index = i * 2
+                val byteValue = hexStringNoColons.substring(index, index + 2).toInt(16)
+                hashBytes[i] = byteValue.toByte()
+            } catch (e: NumberFormatException) {
+                throw IllegalArgumentException("Invalid hex character in fingerprint: $hexStringNoColons", e)
+            }
+        }
+        return Base64Helper.b64Encode(hashBytes)
+    }
+}
