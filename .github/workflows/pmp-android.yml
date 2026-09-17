@@ -3,8 +3,14 @@ name: PmVault Android (APK)
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'app/src/main/java/com/kunzisoft/keepass/pmp/**'
+      - 'app/src/main/java/com/kunzisoft/keepass/timeout/**'
+      - 'app/src/main/java/com/kunzisoft/keepass/activities/MainCredentialActivity.kt'
+      - 'app/build.gradle.kts'
+      - '.github/workflows/pmp-android.yml'
   pull_request:
     paths:
       - 'app/src/main/java/com/kunzisoft/keepass/pmp/**'
@@ -15,18 +21,32 @@ on:
 
 jobs:
   android:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # Use the Android SDK pre-installed on the GitHub runner (AGP downloads
+      # the required platform-36 / build-tools automatically); just accept licenses.
+      - name: Accept Android SDK licenses
+        run: |
+          SDKMGR=""
+          for c in "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+                   "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+                   "$ANDROID_HOME/cmdline-tools/bin/sdkmanager" \
+                   "$ANDROID_HOME/tools/bin/sdkmanager"; do
+            if [ -x "$c" ]; then SDKMGR="$c"; break; fi
+          done
+          echo "ANDROID_HOME=$ANDROID_HOME  sdkmanager=$SDKMGR"
+          if [ -n "$SDKMGR" ]; then
+            yes | "$SDKMGR" --licenses >/dev/null 2>&1 || true
+          fi
+          ls "$ANDROID_HOME/licenses" 2>/dev/null || true
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
