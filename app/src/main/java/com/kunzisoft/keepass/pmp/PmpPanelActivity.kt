@@ -6,7 +6,7 @@
  *   - verifying and browsing the encrypted audit chain,
  *   - a loopback self-test of the mutual-TLS-1.3 sync engine.
  *
- * It is registered as a separate launcher icon ("PmVault tools"). The second
+ * It is registered as a separate launcher icon ("PmVault 工具"). The second
  * factor gate itself is enforced automatically in MainCredentialActivity.
  *
  * Copyright (C) 2026 PmVault Project
@@ -69,37 +69,37 @@ class PmpPanelActivity : AppCompatActivity() {
         }
 
         root.addView(TextView(this).apply {
-            text = "PmVault tools"
+            text = "PmVault 工具"
             textSize = 22f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
 
-        section("Database file URI")
+        section("数据库文件 URI")
         uriEdit = EditText(this).apply {
             setText(PmVault.getLastDatabaseUri() ?: "")
             hint = "content://…/database.kdbx"
         }
         root.addView(uriEdit)
 
-        section("Second factor (TOTP unlock)")
+        section("第二因素（TOTP 解锁）")
         status = TextView(this).apply { textSize = 13f }
         root.addView(status)
-        button("Refresh status") { refreshStatus() }
-        button("Enable second factor") { enroll() }
-        button("Remove second factor") { remove() }
+        button("刷新状态") { refreshStatus() }
+        button("启用第二因素") { enroll() }
+        button("移除第二因素") { remove() }
 
-        section("Encrypted audit log")
-        button("Verify integrity") { verifyAudit() }
-        button("Show recent records") { showRecords() }
+        section("加密审计日志")
+        button("校验完整性") { verifyAudit() }
+        button("查看最近记录") { showRecords() }
 
-        section("LAN sync (TLS 1.3, mutual certificates)")
+        section("局域网同步（TLS 1.3 双向证书）")
         root.addView(TextView(this).apply {
-            text = "Default off · port 19532 · single 30 s listen · KeepBoth conflicts.\n" +
-                    "TLS 1.3 requires Android 10+. The button below runs a loopback " +
-                    "self-test of the certificate, protocol and merge engine on this device."
+            text = "默认关闭 · 端口 19532 · 单次监听 30 秒 · 冲突默认双方保留。\n" +
+                    "TLS 1.3 需要 Android 10 及以上，下方按钮在本机对证书、协议" +
+                    "与合并引擎进行环回自测。"
             textSize = 12f
         })
-        button("Run loopback self-test") { loopbackSelfTest() }
+        button("运行本机环回自测") { loopbackSelfTest() }
         syncLog = TextView(this).apply { textSize = 12f; setPadding(0, 12, 0, 0) }
         root.addView(syncLog)
 
@@ -110,7 +110,7 @@ class PmpPanelActivity : AppCompatActivity() {
 
     private fun refreshStatus() {
         val enrolled = PmpSecondFactor.isEnrolled(uri())
-        status.text = "Second factor: " + if (enrolled) "ENROLLED" else "not enrolled"
+        status.text = "第二因素：" + if (enrolled) "已启用" else "未启用"
     }
 
     private fun enroll() {
@@ -118,54 +118,54 @@ class PmpPanelActivity : AppCompatActivity() {
         val start = PmpSecondFactor.beginEnroll(uri(), label)
         val input = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
-            hint = "6-digit code"
+            hint = "6 位验证码"
         }
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 32, 48, 0)
             addView(TextView(this@PmpPanelActivity).apply {
-                text = "1) Add this secret to your authenticator app:\n\n" +
-                        "Secret: ${start.secretB32}\n\n${start.otpauthUri}\n\n" +
-                        "2) Enter the current 6-digit code to confirm."
+                text = "1) 将以下密钥添加到验证器应用：\n\n" +
+                        "密钥：${start.secretB32}\n\n${start.otpauthUri}\n\n" +
+                        "2) 输入当前 6 位验证码完成确认。"
                 textSize = 12f
             })
             addView(input)
         }
         AlertDialog.Builder(this)
-            .setTitle("Enable second factor")
+            .setTitle("启用第二因素")
             .setView(container)
-            .setPositiveButton("Confirm") { _, _ ->
+            .setPositiveButton("确认") { _, _ ->
                 val (ok, err) = PmpSecondFactor.confirmEnroll(uri(), input.text.toString())
-                toast(if (ok) "Second factor enabled." else err)
+                toast(if (ok) "第二因素已启用。" else err)
                 refreshStatus()
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("取消", null)
             .show()
     }
 
     private fun remove() {
         if (!PmpSecondFactor.isEnrolled(uri())) {
-            toast("Not enrolled."); return
+            toast("尚未启用第二因素。"); return
         }
         val input = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
-            hint = "current 6-digit code"
+            hint = "当前 6 位验证码"
         }
         AlertDialog.Builder(this)
-            .setTitle("Remove second factor")
-            .setMessage("Enter a current code to confirm removal.")
+            .setTitle("移除第二因素")
+            .setMessage("请输入当前验证码以确认移除。")
             .setView(input)
-            .setPositiveButton("Remove") { _, _ ->
+            .setPositiveButton("移除") { _, _ ->
                 val (result, _) = PmpSecondFactor.verifyInteractive(uri(), input.text.toString())
                 if (result == PmpSecondFactor.OK) {
                     PmpSecondFactor.removeEnrollment(uri())
-                    toast("Second factor removed.")
+                    toast("第二因素已移除。")
                 } else {
-                    toast("Removal not authorised.")
+                    toast("验证码不正确，未授权移除。")
                 }
                 refreshStatus()
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("取消", null)
             .show()
     }
 
@@ -173,9 +173,9 @@ class PmpPanelActivity : AppCompatActivity() {
         PmpAuditLog.bindDatabase(uri())
         val r = PmpAuditLog.verify(uri())
         AlertDialog.Builder(this)
-            .setTitle("Audit integrity")
-            .setMessage("${r.message}\n\nChain OK: ${r.chainOk}\nAnchor OK: ${r.anchorOk}\n" +
-                    "Truncated: ${r.truncated}\nReadable: ${r.readableCount}/${r.totalCount}")
+            .setTitle("审计完整性校验")
+            .setMessage("${r.message}\n\n哈希链正常：${r.chainOk}\n锚点正常：${r.anchorOk}\n" +
+                    "已截断：${r.truncated}\n可读记录：${r.readableCount}/${r.totalCount}")
             .setPositiveButton(android.R.string.ok, null)
             .show()
     }
@@ -184,7 +184,7 @@ class PmpPanelActivity : AppCompatActivity() {
         PmpAuditLog.bindDatabase(uri())
         val records = PmpAuditLog.readAll(uri(), 200).takeLast(120).asReversed()
         val body = if (records.isEmpty()) {
-            "No records for this database yet."
+            "该数据库暂无审计记录。"
         } else {
             records.joinToString("\n") { r ->
                 val t = Date(r.ts).toString()
@@ -196,7 +196,7 @@ class PmpPanelActivity : AppCompatActivity() {
         val tv = TextView(this).apply { setTextIsSelectable(true); text = body; textSize = 12f }
         val pad = 48
         AlertDialog.Builder(this)
-            .setTitle("Recent audit records")
+            .setTitle("最近审计记录（最多 120 条）")
             .setView(tv)
             .setPositiveButton(android.R.string.ok, null)
             .show()

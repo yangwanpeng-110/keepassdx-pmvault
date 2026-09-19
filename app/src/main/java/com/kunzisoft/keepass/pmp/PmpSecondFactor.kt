@@ -128,14 +128,14 @@ object PmpSecondFactor {
     fun confirmEnroll(fileUri: String?, code: String): Pair<Boolean, String> {
         val id = id16(fileUri)
         val start = pending[id]
-            ?: return false to "No enrollment in progress. Start enrollment again."
+            ?: return false to "没有进行中的注册，请重新开始注册。"
         val match = matchCode(start.secretB32, code)
-            ?: return false to "The TOTP code did not match. Scan the QR code and try again."
+            ?: return false to "验证码不匹配，请扫描二维码后重试。"
         val v = Vault(
             enabled = true, secretB32 = start.secretB32, lastCounter = match,
             failCount = 0, lockUntilMs = 0, enrolledAtMs = System.currentTimeMillis()
         )
-        if (!saveVault(id, v)) return false to "Failed to write the local second-factor vault."
+        if (!saveVault(id, v)) return false to "写入本地第二因素保险库失败。"
         pending.remove(id)
         PmpAuditLog.bindDatabase(fileUri)
         PmpAuditLog.record(PmpAuditLog.EV_TWO_FACTOR_ENROLL, PmpAuditLog.OC_SUCCESS,
@@ -164,16 +164,16 @@ object PmpSecondFactor {
             val secs = (v.lockUntilMs - now + 999) / 1000
             PmpAuditLog.record(PmpAuditLog.EV_TWO_FACTOR_FAILED, PmpAuditLog.OC_DENIED,
                 PmpAuditLog.FLD_TOTP, PmpAuditLog.TGT_LOCAL_DATABASE)
-            return LOCKED to "Too many failed attempts. Try again in $secs second(s)."
+            return LOCKED to "失败次数过多，请在 $secs 秒后重试。"
         }
         val entered = code.filter { it.isDigit() }
-        if (entered.length != DIGITS) return WRONG to "Enter the $DIGITS-digit code."
+        if (entered.length != DIGITS) return WRONG to "请输入 $DIGITS 位验证码。"
 
         val matched = matchCode(v.secretB32, entered)
         if (matched != null && matched <= v.lastCounter) {
             PmpAuditLog.record(PmpAuditLog.EV_TWO_FACTOR_FAILED, PmpAuditLog.OC_DENIED,
                 PmpAuditLog.FLD_TOTP, PmpAuditLog.TGT_LOCAL_DATABASE)
-            return REPLAY to "This code has already been used. Wait for the next code."
+            return REPLAY to "该验证码已使用，请等待下一个验证码。"
         }
         if (matched != null) {
             v.lastCounter = maxOf(v.lastCounter, matched)
@@ -197,7 +197,7 @@ object PmpSecondFactor {
         val remaining = maxOf(0, HARD_LOCK_FAILURES - v.failCount)
         PmpAuditLog.record(PmpAuditLog.EV_TWO_FACTOR_FAILED, PmpAuditLog.OC_FAILURE,
             PmpAuditLog.FLD_TOTP, PmpAuditLog.TGT_LOCAL_DATABASE)
-        return WRONG to "Incorrect code. $remaining attempt(s) remaining before a longer lockout. Retry in $secs second(s)."
+        return WRONG to "验证码错误，距离更长锁定还剩 $remaining 次机会，请在 $secs 秒后重试。"
     }
 
     /** Matches over the +/-1 window; returns the matched counter, or null. */
