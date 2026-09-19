@@ -29,7 +29,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.kunzisoft.keepass.activities.legacy.DatabaseLockActivity
-import com.kunzisoft.keepass.database.element.Database
+import com.kunzisoft.keepass.database.ContextualDatabase
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -194,8 +194,9 @@ class PmpSyncDialog : DialogFragment() {
         startButton?.isEnabled = false
         setCloseEnabled(false)
 
-        val fileUri = Database.getInstance().fileUri?.toString() ?: ""
-        val store = PmpKdbxStore(Database.getInstance(), fileUri)
+        val database = ContextualDatabase.getInstance()
+        val fileUri = database.fileUri?.toString() ?: ""
+        val store = PmpKdbxStore(database, fileUri)
 
         val runner = PmpSyncRunner(
             store,

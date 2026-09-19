@@ -129,22 +129,20 @@ class SetMainCredentialViewModel : ViewModel() {
 
             if (error) return@launch
 
-            // Global logic
-            if (!passwordChecked && !keyFileChecked && !hardwareKeyChecked) {
-                if (allowNoMasterKey) {
-                    _confirmationState.value = ConfirmationState.Showing(ConfirmationType.NO_KEY)
-                } else {
+            // PmVault security policy: a non-empty master password is MANDATORY.
+            // A key file / hardware key is only a secondary factor and can never
+            // replace the password (mirrors the desktop build).
+            val passwordMissing = !passwordChecked || (masterPassword?.isEmpty() ?: true)
+            when {
+                passwordMissing -> {
                     _validationError.emit(ValidationError.NoCredentialsDisallowed)
                 }
-            } else if (passwordChecked
-                && masterPassword?.isEmpty() ?: true
-                && !keyFileChecked
-                && !hardwareKeyChecked) {
-                _confirmationState.value = ConfirmationState.Showing(ConfirmationType.EMPTY_PASSWORD)
-            } else if (hardwareKey != null && !isHardwareKeyAvailable(hardwareKey!!)) {
-                _validationError.emit(ValidationError.HardwareDriverRequired(hardwareKey.toString()))
-            } else {
-                confirmMainCredential()
+                hardwareKey != null && !isHardwareKeyAvailable(hardwareKey!!) -> {
+                    _validationError.emit(ValidationError.HardwareDriverRequired(hardwareKey.toString()))
+                }
+                else -> {
+                    confirmMainCredential()
+                }
             }
         }
     }

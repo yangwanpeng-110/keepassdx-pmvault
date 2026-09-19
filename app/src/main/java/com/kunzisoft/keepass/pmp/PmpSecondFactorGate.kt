@@ -24,12 +24,12 @@ object PmpSecondFactorGate {
             hint = "000000"
         }
         val dialog = AlertDialog.Builder(activity)
-            .setTitle("Second factor (TOTP)")
-            .setMessage("Enter the 6-digit code from your authenticator app.")
+            .setTitle("第二因素（TOTP）")
+            .setMessage("请输入验证器应用中显示的 6 位验证码。")
             .setView(input)
             .setCancelable(false)
-            .setPositiveButton("Unlock", null)
-            .setNegativeButton("Cancel") { _, _ -> onFail() }
+            .setPositiveButton("解锁", null)
+            .setNegativeButton("取消") { _, _ -> onFail() }
             .create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
