@@ -115,6 +115,11 @@ open class Database {
         return iconsManager.getIcon(iconId)
     }
 
+    // PmVault: database-level (metadata) CustomData, used to store sync tombstones
+    // (PM:Tombstones). Entry-level CustomData lives on each Entry instead.
+    val metaCustomData: CustomData?
+        get() = mDatabaseKDBX?.customData
+
     val allowCustomIcons: Boolean
         get() = mDatabaseKDBX != null
 

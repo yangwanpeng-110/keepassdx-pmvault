@@ -47,6 +47,8 @@ interface PmpSyncStore {
     fun apply(actions: List<Action>, remote: State): IntArray // [upserted, deleted, copies]
     fun peerTrusted(fingerprint: String): Boolean
     fun trustPeer(fingerprint: String)
+    /** Called once the peer node id is known (before apply), for conflict-copy naming. */
+    fun onPeerNode(node: String) {}
 }
 
 data class SyncReport(
@@ -209,6 +211,7 @@ class PmpSyncRunner(
 
             fun applyMergeAndReply() {
                 if (applied) return
+                store.onPeerNode(report.peerNode)
                 val actions = PmpSyncCore.planMerge(local, remote, policy)
                 val counts = store.apply(actions, remote)
                 val upserted = counts[0]; val deleted = counts[1]; val copies = counts[2]
