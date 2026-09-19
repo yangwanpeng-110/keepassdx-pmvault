@@ -61,6 +61,7 @@ import com.kunzisoft.keepass.activities.fragments.GroupFragment
 import com.kunzisoft.keepass.activities.fragments.SearchFragment
 import com.kunzisoft.keepass.activities.helpers.ExternalFileHelper
 import com.kunzisoft.keepass.activities.legacy.DatabaseLockActivity
+import com.kunzisoft.keepass.pmp.PmpSyncDialog
 import com.kunzisoft.keepass.adapters.BreadcrumbAdapter
 import com.kunzisoft.keepass.credentialprovider.EntrySelectionHelper
 import com.kunzisoft.keepass.credentialprovider.EntrySelectionHelper.addSearchInfo
@@ -1191,6 +1192,10 @@ class GroupActivity : DatabaseLockActivity() {
             }
             R.id.menu_reload_database -> {
                 reloadDatabase()
+                return true
+            }
+            R.id.menu_pmp_sync -> {
+                PmpSyncDialog.show(supportFragmentManager)
                 return true
             }
             R.id.menu_empty_recycle_bin -> {

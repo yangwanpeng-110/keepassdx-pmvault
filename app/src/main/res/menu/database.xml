@@ -37,4 +37,8 @@
         android:orderInCategory="97"
         app:iconTint="?attr/colorControlNormal"
         app:showAsAction="ifRoom" />
+    <item android:id="@+id/menu_pmp_sync"
+        android:title="@string/menu_pmp_sync"
+        android:orderInCategory="98"
+        app:showAsAction="never" />
 </menu>
