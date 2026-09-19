@@ -128,6 +128,7 @@ android {
 
 dependencies {
     implementation(libs.bouncycastle.pkix) // PmVault: self-signed ECDSA TLS identity
+    implementation("com.google.zxing:core:3.5.3") // PmVault: QR code for TOTP enrollment
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)

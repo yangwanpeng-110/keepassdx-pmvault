@@ -37,6 +37,10 @@
         android:orderInCategory="97"
         app:iconTint="?attr/colorControlNormal"
         app:showAsAction="ifRoom" />
+    <item android:id="@+id/menu_pmp_second_factor"
+        android:title="@string/menu_pmp_second_factor"
+        android:orderInCategory="96"
+        app:showAsAction="never" />
     <item android:id="@+id/menu_pmp_sync"
         android:title="@string/menu_pmp_sync"
         android:orderInCategory="98"

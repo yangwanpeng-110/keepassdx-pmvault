@@ -813,4 +813,5 @@
     <string name="first_chars">First chars</string>
     <string name="check">Check</string>
     <string name="menu_pmp_sync">LAN sync</string>
+    <string name="menu_pmp_second_factor">Second factor (TOTP)</string>
 </resources>
