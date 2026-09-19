@@ -127,7 +127,11 @@ android {
 }
 
 dependencies {
-    implementation(libs.bouncycastle.pkix) // PmVault: self-signed ECDSA TLS identity
+    // PmVault: self-signed ECDSA TLS identity (explicit coordinates so the cert
+    // jcajce API — JcaContentSignerBuilder — is guaranteed on the app compile classpath).
+    implementation("org.bouncycastle:bcprov-jdk18on:1.84")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.84")
+    implementation("org.bouncycastle:bcutil-jdk18on:1.84")
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
