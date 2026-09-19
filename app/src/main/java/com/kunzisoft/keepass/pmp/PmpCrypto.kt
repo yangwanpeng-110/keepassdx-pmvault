@@ -33,7 +33,7 @@ object PmpCrypto {
 
     // HKDF-SHA256 (RFC 5869).
     fun hkdf(secret: ByteArray, salt: ByteArray, info: ByteArray, len: Int = 32): ByteArray {
-        val prk = hmacSha256(salt.ifEmpty { ByteArray(32) }, secret)
+        val prk = hmacSha256(if (salt.isEmpty()) ByteArray(32) else salt, secret)
         val out = ByteArray(len)
         var t = ByteArray(0)
         var pos = 0

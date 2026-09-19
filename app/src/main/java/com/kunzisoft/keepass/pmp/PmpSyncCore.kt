@@ -80,7 +80,8 @@ class Snapshot(
     var uuid: String = "",
     var vclock: VClock = VClock(),
     var fields: JSONObject = JSONObject(),
-    var contentHash: String = ""
+    var contentHash: String = "",
+    var origin: String = ""
 ) {
     fun computeHash(): String {
         val keys = ArrayList<String>().apply {
@@ -101,13 +102,15 @@ class Snapshot(
         .put("vclock", vclock.toJson())
         .put("fields", fields)
         .put("hash", contentHash)
+        .put("origin", origin)
 
     companion object {
         fun fromJson(o: JSONObject) = Snapshot(
             uuid = o.optString("uuid"),
             vclock = VClock.fromJson(o.opt("vclock")),
             fields = o.optJSONObject("fields") ?: JSONObject(),
-            contentHash = o.optString("hash")
+            contentHash = o.optString("hash"),
+            origin = o.optString("origin")
         )
     }
 }
@@ -122,6 +125,10 @@ class Tombstone(var uuid: String = "", var vclock: VClock = VClock()) {
 
 const val POLICY_KEEP_BOTH = 0
 const val POLICY_DELETE_WINS = 1
+
+// Creating-device markers carried in Snapshot.origin (never part of contentHash).
+const val ORIGIN_DESKTOP = "desktop"
+const val ORIGIN_MOBILE = "mobile"
 
 const val ACT_IGNORE = 0
 const val ACT_UPSERT = 1

@@ -137,7 +137,7 @@ object PmpAuditLog {
     private fun writeAnchor(id: String, seq: Long, link: ByteArray) {
         val plain = "$seq|${PmpCrypto.toHex(link)}".toByteArray(Charsets.UTF_8)
         val sealed = PmpCrypto.aesGcmSeal(logKey(id), plain, ANCHOR_AAD.toByteArray())
-        anchorFile(id).writeBytes(PmpCrypto.toB64(sealed) + "\n")
+        anchorFile(id).writeText(PmpCrypto.toB64(sealed) + "\n")
     }
 
     private fun openLine(id: String, line: String, prevLink: ByteArray): ByteArray? {

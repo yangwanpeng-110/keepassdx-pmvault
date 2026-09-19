@@ -183,7 +183,7 @@ class PmpPanelActivity : AppCompatActivity() {
     private fun showRecords() {
         PmpAuditLog.bindDatabase(uri())
         val records = PmpAuditLog.readAll(uri(), 200).takeLast(120).asReversed()
-        val text = if (records.isEmpty()) {
+        val body = if (records.isEmpty()) {
             "No records for this database yet."
         } else {
             records.joinToString("\n") { r ->
@@ -193,7 +193,7 @@ class PmpPanelActivity : AppCompatActivity() {
                 "#${r.seq} $t  ${PmpAuditLog.eventName(r.event)} [${PmpAuditLog.outcomeName(r.outcome)}]$field$target"
             }
         }
-        val tv = TextView(this).apply { setTextIsSelectable(true); text = text; textSize = 12f }
+        val tv = TextView(this).apply { setTextIsSelectable(true); text = body; textSize = 12f }
         val pad = 48
         AlertDialog.Builder(this)
             .setTitle("Recent audit records")
@@ -226,12 +226,14 @@ class PmpPanelActivity : AppCompatActivity() {
         val storeB = PmpInMemoryStore(remote, fileUri, identity.nodeId) { true }
 
         PmpSyncRunner(storeA, true, "", SYNC_DEFAULT_PORT, POLICY_KEEP_BOTH,
-            { appendLog("A: $it") },
+            { true },
+            { line -> appendLog("A: $line") },
             { r -> appendLog("A result: ok=${r.ok} upserted=${r.upserted} - ${r.message}") }).start()
 
         ui.postDelayed({
             PmpSyncRunner(storeB, false, "127.0.0.1", SYNC_DEFAULT_PORT, POLICY_KEEP_BOTH,
-                { appendLog("B: $it") },
+                { true },
+                { line -> appendLog("B: $line") },
                 { r -> appendLog("B result: ok=${r.ok} upserted=${r.upserted} - ${r.message}") }).start()
         }, 900)
     }

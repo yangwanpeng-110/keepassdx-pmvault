@@ -24,7 +24,8 @@ data class PmpEntryData(
     var vclockJson: String = "",
     var lastHash: String = "",
     var deleted: Boolean = false,
-    var tombVclockJson: String = ""
+    var tombVclockJson: String = "",
+    var origin: String = ""
 )
 
 /** Fingerprint pin list, persisted per database in app-private storage. */
@@ -75,6 +76,8 @@ class PmpInMemoryStore(
             for ((k, v) in e.fields) fields.put(k, v)
             val snap = Snapshot(e.uuid, fields = fields)
             snap.computeHash()
+            if (e.origin.isEmpty()) e.origin = ORIGIN_MOBILE
+            snap.origin = e.origin
             var vc = VClock.fromJson(runCatching { JSONObject(e.vclockJson) }.getOrNull())
             if (vc.isEmpty()) vc.tick(selfNode)
             if (e.lastHash != snap.contentHash) vc.tick(selfNode)
@@ -104,6 +107,7 @@ class PmpInMemoryStore(
                         val k = keys.next()
                         e.fields[k] = snap.fields.optString(k)
                     }
+                    e.origin = snap.origin.ifEmpty { ORIGIN_DESKTOP }
                     val vc = VClock.merge(
                         VClock.fromJson(runCatching { JSONObject(e.vclockJson) }.getOrNull()),
                         snap.vclock
@@ -123,6 +127,7 @@ class PmpInMemoryStore(
                         if (k == "Title") v = "$v (conflict copy ${selfNode.take(6)})"
                         copy.fields[k] = v
                     }
+                    copy.origin = snap.origin.ifEmpty { ORIGIN_DESKTOP }
                     val vc = snap.vclock.copy()
                     vc.tick(selfNode)
                     copy.vclockJson = vc.toJson().toString()

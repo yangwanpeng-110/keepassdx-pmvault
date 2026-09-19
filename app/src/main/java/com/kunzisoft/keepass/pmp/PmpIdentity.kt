@@ -27,6 +27,7 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Date
 import javax.net.ssl.KeyManager
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
@@ -89,7 +90,7 @@ object PmpIdentityStore {
         val id = generate()
         val o = JSONObject().put("node", id.nodeId).put("cert", id.certPem).put("key", id.keyPem)
         val sealed = PmpCrypto.aesGcmSeal(key(), o.toString().toByteArray(), ID_AAD.toByteArray())
-        f.writeBytes(PmpCrypto.toB64(sealed))
+        f.writeText(PmpCrypto.toB64(sealed))
         return id
     }
 
@@ -161,6 +162,8 @@ object PmpIdentityStore {
             override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = check(chain)
             override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) = check(chain)
             override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) = check(chain)
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) = check(chain)
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) = check(chain)
             override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
         }
         // Fall back to 1.2+ only where the platform lacks a 1.3 constant.

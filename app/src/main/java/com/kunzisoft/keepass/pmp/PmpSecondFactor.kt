@@ -107,7 +107,7 @@ object PmpSecondFactor {
             .put("lockUntil", v.lockUntilMs)
             .put("enrolledAt", v.enrolledAtMs)
         val sealed = PmpCrypto.aesGcmSeal(key(id), o.toString().toByteArray(), VAULT_AAD.toByteArray())
-        return runCatching { vaultFile(id).writeBytes(PmpCrypto.toB64(sealed)); true }.getOrDefault(false)
+        return runCatching { vaultFile(id).writeText(PmpCrypto.toB64(sealed)); true }.getOrDefault(false)
     }
 
     fun isEnrolled(fileUri: String?): Boolean = loadVault(id16(fileUri)) != null
