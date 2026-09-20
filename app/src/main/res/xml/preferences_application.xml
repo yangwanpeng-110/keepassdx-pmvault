@@ -23,11 +23,6 @@
         android:title="@string/general">
 
         <SwitchPreferenceCompat
-            android:key="@string/allow_no_password_key"
-            android:title="@string/allow_no_password_title"
-            android:summary="@string/allow_no_password_summary"
-            android:defaultValue="@bool/allow_no_password_default"/>
-        <SwitchPreferenceCompat
             android:key="@string/delete_entered_password_key"
             android:title="@string/delete_entered_password_title"
             android:summary="@string/delete_entered_password_summary"
@@ -37,11 +32,6 @@
             android:title="@string/enable_auto_save_database_title"
             android:summary="@string/enable_auto_save_database_summary"
             android:defaultValue="@bool/enable_auto_save_database_default"/>
-        <SwitchPreferenceCompat
-            android:key="@string/auto_focus_search_key"
-            android:title="@string/auto_focus_search_title"
-            android:summary="@string/auto_focus_search_summary"
-            android:defaultValue="@bool/auto_focus_search_default"/>
         <SwitchPreferenceCompat
             android:key="@string/enable_keep_screen_on_key"
             android:title="@string/enable_keep_screen_on_title"
@@ -79,11 +69,6 @@
             android:title="@string/lock_database_screen_off_title"
             android:summary="@string/lock_database_screen_off_summary"
             android:defaultValue="@bool/lock_database_screen_off_default"/>
-        <SwitchPreferenceCompat
-            android:key="@string/lock_database_back_root_key"
-            android:title="@string/lock_database_back_root_title"
-            android:summary="@string/lock_database_back_root_summary"
-            android:defaultValue="@bool/lock_database_back_root_default"/>
         <SwitchPreferenceCompat
             android:key="@string/lock_database_show_button_key"
             android:title="@string/lock_database_show_button_title"

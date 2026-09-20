@@ -120,9 +120,8 @@ object PreferencesUtil {
     }
 
     fun automaticallyFocusSearch(context: Context): Boolean {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        return prefs.getBoolean(context.getString(R.string.auto_focus_search_key),
-            context.resources.getBoolean(R.bool.auto_focus_search_default))
+        // PmVault: quick-search prompt removed; opening a database never asks to search.
+        return false
     }
 
     fun searchSubDomains(context: Context): Boolean {
@@ -499,9 +498,8 @@ object PreferencesUtil {
     }
 
     fun isLockDatabaseWhenBackButtonOnRootClicked(context: Context): Boolean {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        return prefs.getBoolean(context.getString(R.string.lock_database_back_root_key),
-            context.resources.getBoolean(R.bool.lock_database_back_root_default))
+        // PmVault: Back at the database root always locks (toggle removed).
+        return true
     }
 
     fun showLockDatabaseButton(context: Context): Boolean {
@@ -631,9 +629,8 @@ object PreferencesUtil {
     }
 
     fun emptyPasswordAllowed(context: Context): Boolean {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        return prefs.getBoolean(context.getString(R.string.allow_no_password_key),
-            context.resources.getBoolean(R.bool.allow_no_password_default))
+        // PmVault: a non-empty master password is always required (toggle removed).
+        return false
     }
 
     fun deletePasswordAfterConnexionAttempt(context: Context): Boolean {

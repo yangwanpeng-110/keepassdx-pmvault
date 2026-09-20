@@ -322,16 +322,10 @@
             </intent-filter>
         </receiver>
 
-        <!-- PmVault tools panel: TOTP second factor, encrypted audit, sync self-test -->
+        <!-- PmVault tools panel: internal diagnostics only, no launcher icon -->
         <activity
             android:name="com.kunzisoft.keepass.pmp.PmpPanelActivity"
-            android:exported="true"
-            android:label="PmVault tools">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false" />
 
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
     </application>
