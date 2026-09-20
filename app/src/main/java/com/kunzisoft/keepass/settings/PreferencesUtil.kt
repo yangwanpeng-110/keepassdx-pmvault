@@ -542,11 +542,9 @@ object PreferencesUtil {
     }
 
     fun isDeviceCredentialUnlockEnable(context: Context): Boolean {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        // Priority to biometric unlock
-        return prefs.getBoolean(context.getString(R.string.device_credential_unlock_enable_key),
-            context.resources.getBoolean(R.bool.device_credential_unlock_enable_default))
-                && !isBiometricUnlockEnable(context)
+        // PmVault: device-credential (lock-screen PIN/pattern/password) unlock has
+        // been removed; only biometric (fingerprint/face) unlock is offered.
+        return false
     }
 
     fun isTempDeviceUnlockEnable(context: Context): Boolean {

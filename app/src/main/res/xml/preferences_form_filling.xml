@@ -71,6 +71,11 @@
             android:title="@string/subdomain_search_title"
             android:summary="@string/subdomain_search_summary"
             android:defaultValue="@bool/subdomain_search_default"/>
+        <Preference
+            android:key="@string/subdomain_search_explanation_key"
+            android:icon="@drawable/prefs_info_24dp"
+            android:title="@string/subdomain_search_info_title"
+            android:summary="@string/subdomain_search_info_summary"/>
         <SwitchPreferenceCompat
             android:key="@string/clipboard_otp_notifications_key"
             android:title="@string/clipboard_otp_notifications_title"

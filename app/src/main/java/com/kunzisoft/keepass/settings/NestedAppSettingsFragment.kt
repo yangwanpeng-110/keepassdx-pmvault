@@ -175,6 +175,16 @@ class NestedAppSettingsFragment : NestedSettingsFragment() {
             false
         }
 
+        // PmVault: in-app explanation page for sub-domain matching (no external wiki).
+        findPreference<Preference>(getString(R.string.subdomain_search_explanation_key))?.setOnPreferenceClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.subdomain_search_info_title))
+                .setMessage(getString(R.string.subdomain_search_info_message))
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+            false
+        }
+
         val copyPasswordPreference: TwoStatePreference? = findPreference(getString(R.string.allow_copy_password_key))
         copyPasswordPreference?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue as Boolean && context != null) {
@@ -240,7 +250,8 @@ class NestedAppSettingsFragment : NestedSettingsFragment() {
                                 biometricUnlockEnablePreference.isChecked = false
                                 warningMessage(activity, keystoreWarning = true, deleteKeys = true) {
                                     biometricUnlockEnablePreference.isChecked = true
-                                    deviceCredentialUnlockEnablePreference.isChecked = false
+                                    // PmVault: device-credential preference removed; null-safe.
+                                    deviceCredentialUnlockEnablePreference?.isChecked = false
                                 }
                             } else {
                                 biometricUnlockEnablePreference.isChecked = false

@@ -29,11 +29,7 @@
             android:title="@string/biometric_unlock_enable_title"
             android:summary="@string/biometric_unlock_enable_summary"
             android:defaultValue="@bool/biometric_unlock_enable_default"/>
-        <SwitchPreferenceCompat
-            android:key="@string/device_credential_unlock_enable_key"
-            android:title="@string/device_credential_unlock_enable_title"
-            android:summary="@string/device_credential_unlock_enable_summary"
-            android:defaultValue="@bool/device_credential_unlock_enable_default"/>
+        <!-- PmVault: device-credential (lock-screen PIN/pattern) unlock removed; biometric only. -->
         <SwitchPreferenceCompat
             android:key="@string/biometric_auto_open_prompt_key"
             android:title="@string/biometric_auto_open_prompt_title"

@@ -70,7 +70,10 @@ object PmpAuditLog {
 
     data class Record(
         val seq: Long, val ts: Long, val event: Int, val outcome: Int,
-        val field: Int, val target: Int, val dbId: String
+        val field: Int, val target: Int, val dbId: String,
+        // Optional, backward-compatible 10th field. Network/TLS diagnostics only;
+        // never entry titles, URLs, usernames, passwords or TOTP codes.
+        val detail: String = ""
     )
 
     data class VerifyResult(
@@ -113,8 +116,29 @@ object PmpAuditLog {
         else -> false
     }
 
-    /** The ONLY recording entry point. No free-text / value parameters. */
-    fun record(event: Int, outcome: Int = OC_SUCCESS, field: Int = FLD_NONE, target: Int = TGT_NONE) =
+    /**
+     * Sanitize an optional diagnostic detail: strip the field delimiter, line
+     * breaks and control characters, percent-encode the rest, and bound the
+     * length. Only network/TLS stage and error text is allowed.
+     */
+    private fun encodeDetail(detail: String): String {
+        if (detail.isEmpty()) return ""
+        val cleaned = StringBuilder(detail.length)
+        for (ch in detail) {
+            if (ch.code < 0x20 || ch == '|' || ch == '\u007f') {
+                cleaned.append(' ')
+            } else {
+                cleaned.append(ch)
+            }
+        }
+        var s = cleaned.toString().trim()
+        if (s.length > 600) s = s.substring(0, 600)
+        return runCatching { java.net.URLEncoder.encode(s, "UTF-8") }.getOrDefault("")
+    }
+
+    /** The ONLY recording entry point. No free-text value parameters (detail is diagnostics only). */
+    fun record(event: Int, outcome: Int = OC_SUCCESS, field: Int = FLD_NONE, target: Int = TGT_NONE,
+               detail: String = "") =
         synchronized(lock) {
             if (currentId.isEmpty()) return@synchronized
             if (!verbose && !securityCritical(event)) return@synchronized
@@ -122,8 +146,10 @@ object PmpAuditLog {
 
             val seq = lastSeq + 1
             val ts = System.currentTimeMillis()
-            val plain = "v1|$seq|$ts|$event|$outcome|$field|$target|$currentId|"
-                .toByteArray(Charsets.UTF_8)
+            var plainLine = "v1|$seq|$ts|$event|$outcome|$field|$target|$currentId|"
+            val encDetail = encodeDetail(detail)
+            if (encDetail.isNotEmpty()) plainLine += encDetail
+            val plain = plainLine.toByteArray(Charsets.UTF_8)
             val prevLink = lastLink
             val sealed = PmpCrypto.aesGcmSeal(logKey(currentId), plain, prevLink)
             val f = logFile(currentId)
@@ -149,8 +175,11 @@ object PmpAuditLog {
         val p = String(plain, Charsets.UTF_8).split('|')
         if (p.size < 9 || p[0] != "v1") return null
         return runCatching {
+            val detail = if (p.size >= 10) {
+                runCatching { java.net.URLDecoder.decode(p[9], "UTF-8") }.getOrDefault("")
+            } else ""
             Record(p[1].toLong(), p[2].toLong(), p[3].toInt(), p[4].toInt(),
-                p[5].toInt(), p[6].toInt(), p[7])
+                p[5].toInt(), p[6].toInt(), p[7], detail)
         }.getOrNull()
     }
 

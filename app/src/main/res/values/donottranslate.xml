@@ -129,7 +129,7 @@
     <string name="clipboard_timeout_key" translatable="false">clip_timeout_key</string>
     <string name="clipboard_timeout_default" translatable="false">20000</string>
     <string name="clipboard_otp_notifications_key" translatable="false">clipboard_otp_notifications_key</string>
-    <bool name="clipboard_otp_notifications_default" translatable="false">false</bool>
+    <bool name="clipboard_otp_notifications_default" translatable="false">true</bool>
     <string name="credential_provider_key" translatable="false">credential_provider_key</string>
     <string name="settings_credential_provider_enable_key" translatable="false">settings_credential_provider_enable_key</string>
     <bool name="settings_credential_provider_enable_default" translatable="false">false</bool>
@@ -149,7 +149,8 @@
     <string name="user_verification_preferred_key" translatable="false">user_verification_preferred_key</string>
     <bool name="user_verification_preferred_default" translatable="false">true</bool>
     <string name="subdomain_search_key" translatable="false">subdomain_search_key</string>
-    <bool name="subdomain_search_default" translatable="false">false</bool>
+    <bool name="subdomain_search_default" translatable="false">true</bool>
+    <string name="subdomain_search_explanation_key" translatable="false">subdomain_search_explanation_key</string>
     <string name="keyboard_notification_entry_key" translatable="false">keyboard_notification_entry_key</string>
     <bool name="keyboard_notification_entry_default" translatable="false">true</bool>
     <string name="keyboard_notification_entry_clear_close_key" translatable="false">keyboard_notification_entry_clear_close_key</string>
