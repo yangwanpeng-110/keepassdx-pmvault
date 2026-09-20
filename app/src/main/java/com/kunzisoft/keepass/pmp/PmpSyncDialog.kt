@@ -64,7 +64,7 @@ class PmpSyncDialog : DialogFragment() {
         val modeGroup = RadioGroup(ctx)
         val rbListen = RadioButton(ctx).apply {
             id = View.generateViewId()
-            text = "等待电脑连接（在本机监听）"
+            text = "等待电脑连接（在本机监听，约 60 秒）"
             isChecked = true
         }
         val rbConnect = RadioButton(ctx).apply {
@@ -74,6 +74,16 @@ class PmpSyncDialog : DialogFragment() {
         modeGroup.addView(rbListen)
         modeGroup.addView(rbConnect)
         config.addView(modeGroup)
+
+        val selfIps = pmpLocalIpv4Addresses()
+        if (selfIps.isNotEmpty()) {
+            config.addView(label("本机局域网 IP（电脑端请连接此地址）"))
+            config.addView(TextView(ctx).apply {
+                text = selfIps.joinToString("、")
+                setTextIsSelectable(true)
+                setPadding(0, 0, 0, dp(4))
+            })
+        }
 
         config.addView(label("电脑 IP 地址（连接模式）"))
         val ipEdit = EditText(ctx).apply {

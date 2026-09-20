@@ -167,7 +167,20 @@ class FileDatabaseSelectActivity : DatabaseModeActivity() {
             }
         }
         mAdapterDatabaseHistory?.setOnFileDatabaseHistoryDeleteListener { fileDatabaseHistoryToDelete ->
-            databaseFilesViewModel.deleteDatabaseFile(fileDatabaseHistoryToDelete)
+            // PmVault: ask before permanently deleting the physical database file.
+            val name = fileDatabaseHistoryToDelete.databaseAlias
+                ?: fileDatabaseHistoryToDelete.databaseUri?.lastPathSegment.orEmpty()
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("删除数据库")
+                .setMessage(
+                    "将永久删除数据库文件“$name”，并同时清除它的打开记录与生物识别凭据，" +
+                        "此操作不可恢复。确定要删除吗？"
+                )
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    databaseFilesViewModel.deleteDatabaseFile(fileDatabaseHistoryToDelete)
+                }
+                .show()
             true
         }
         mAdapterDatabaseHistory?.setOnSaveAliasListener { fileDatabaseHistoryWithNewAlias ->
@@ -276,18 +289,13 @@ class FileDatabaseSelectActivity : DatabaseModeActivity() {
         val defaultName = getString(R.string.database_file_name_default) +
             getString(R.string.database_file_extension_default)
         try {
-            // PmVault: default new databases to the app-specific external files dir
-            // (Android-recommended third-party file location): no SAF picker, no permission.
-            val base = getExternalFilesDir(null)
-                ?: throw IllegalStateException("external files dir unavailable")
-            val dir = java.io.File(base, "PmVault").apply { if (!exists()) mkdirs() }
-            val stem = getString(R.string.database_file_name_default)
-            val ext = getString(R.string.database_file_extension_default)
-            var file = java.io.File(dir, defaultName)
-            var i = 2
-            while (file.exists()) {
-                file = java.io.File(dir, "${stem}_$i$ext"); i++
-            }
+            // PmVault: create directly in the Android-recommended app-specific
+            // external files dir (…/Android/data/<package>/files/PmVault), with no
+            // SAF location picker and no storage permission. PmVault must be
+            // initialised first, otherwise setPendingOnboarding() throws and the
+            // whole flow silently falls back to the system location picker.
+            com.kunzisoft.keepass.pmp.PmVault.init(applicationContext)
+            val file = com.kunzisoft.keepass.pmp.PmVault.defaultDatabaseFile(applicationContext)
             if (!file.exists() && !file.createNewFile()) {
                 throw IllegalStateException("could not create $file")
             }
@@ -300,6 +308,20 @@ class FileDatabaseSelectActivity : DatabaseModeActivity() {
             Log.e(TAG, "Default-location create failed, falling back to system picker", e)
             mExternalFileHelper?.createDocument(defaultName)
         }
+    }
+
+    /** Show the absolute default database folder so the user can locate the file. */
+    private fun showDefaultDatabaseLocation() {
+        com.kunzisoft.keepass.pmp.PmVault.init(applicationContext)
+        val dir = com.kunzisoft.keepass.pmp.PmVault.defaultDatabaseDir(applicationContext)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("数据库存储位置")
+            .setMessage(
+                "新数据库默认直接建立在以下文件夹：\n\n${dir.absolutePath}\n\n" +
+                    "该目录是安卓为本应用分配的专属存储，无需授权，卸载应用时会一并清除。"
+            )
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     private fun fileNoFoundAction(e: FileNotFoundException) {
@@ -431,6 +453,9 @@ class FileDatabaseSelectActivity : DatabaseModeActivity() {
 
         if (mSpecialMode == SpecialMode.DEFAULT) {
             MenuUtil.defaultMenuInflater(this, menuInflater, menu)
+            // PmVault: let the user inspect the default on-device database folder.
+            menu.add(Menu.NONE, MENU_VIEW_DB_LOCATION, Menu.NONE, "数据库存储位置")
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
         }
 
         Handler(Looper.getMainLooper()).post {
@@ -473,6 +498,10 @@ class FileDatabaseSelectActivity : DatabaseModeActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             android.R.id.home -> this.openUrl(R.string.file_manager_explanation_url)
+            MENU_VIEW_DB_LOCATION -> {
+                showDefaultDatabaseLocation()
+                return true
+            }
         }
         MenuUtil.onDefaultMenuOptionsItemSelected(this, item)
         return super.onOptionsItemSelected(item)
@@ -482,6 +511,7 @@ class FileDatabaseSelectActivity : DatabaseModeActivity() {
 
         private const val TAG = "FileDbSelectActivity"
         private const val EXTRA_DATABASE_URI = "EXTRA_DATABASE_URI"
+        private const val MENU_VIEW_DB_LOCATION = 0x706d0001
 
         /*
          * -------------------------

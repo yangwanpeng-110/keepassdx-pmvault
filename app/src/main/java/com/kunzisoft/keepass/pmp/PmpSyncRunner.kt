@@ -23,19 +23,41 @@ import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.PrintWriter
+import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLException
+import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
 
 const val SYNC_DEFAULT_PORT = 19532
-private const val ACCEPT_TIMEOUT_MS = 30_000
+private const val ACCEPT_TIMEOUT_MS = 60_000
+private const val IO_TIMEOUT_MS = 30_000
 private const val CONNECT_TIMEOUT_MS = 15_000
+
+/** Enumerate this device's non-loopback IPv4 addresses (helps the user aim the peer). */
+fun pmpLocalIpv4Addresses(): List<String> {
+    val out = ArrayList<String>()
+    try {
+        for (iface in NetworkInterface.getNetworkInterfaces()) {
+            if (!iface.isUp || iface.isLoopback) continue
+            for (addr in iface.inetAddresses) {
+                if (addr is Inet4Address && !addr.isLoopbackAddress) {
+                    out.add(addr.hostAddress ?: continue)
+                }
+            }
+        }
+    } catch (_: Exception) {
+    }
+    return out
+}
 
 /** Abstraction over the concrete KeePassDX database (kept out of the network core). */
 interface PmpSyncStore {
@@ -102,10 +124,16 @@ class PmpSyncRunner(
     }
 
     private fun acceptOnce(ctx: SSLContext): SSLSocket? {
-        onLog("Listening for a single LAN peer on port $port (30 s)…")
+        val ips = pmpLocalIpv4Addresses()
+        onLog("Listening for a single LAN peer on port $port (60 s)…")
+        if (ips.isNotEmpty()) onLog("This device's LAN IP(s): ${ips.joinToString(", ")}")
         val factory = ctx.serverSocketFactory
-        val server = factory.createServerSocket(port, 1) as SSLServerSocket
+        // Bind an unbound server socket first so we can enable address reuse and
+        // survive a previous listener that is still in TIME_WAIT.
+        val server = factory.createServerSocket() as SSLServerSocket
+        server.reuseAddress = true
         server.needClientAuth = true
+        server.bind(InetSocketAddress(port), 1)
         server.soTimeout = ACCEPT_TIMEOUT_MS
         val raw = try {
             server.accept()
@@ -115,20 +143,39 @@ class PmpSyncRunner(
         }
         server.close() // single connection only
         val ssl = raw as SSLSocket
-        ssl.soTimeout = ACCEPT_TIMEOUT_MS
+        ssl.soTimeout = IO_TIMEOUT_MS
+        onLog("TCP connection from ${ssl.inetAddress.hostAddress}:${ssl.port}; starting TLS 1.3 handshake…")
         forceTls13(ssl)
-        ssl.startHandshake()
+        try {
+            ssl.startHandshake()
+        } catch (e: SSLHandshakeException) {
+            throw IllegalStateException("TLS handshake failed (certificate/trust or TLS version): ${e.message}", e)
+        } catch (e: SSLException) {
+            throw IllegalStateException("TLS error during handshake: ${e.message}", e)
+        }
         return ssl
     }
 
     private fun connectOnce(ctx: SSLContext): SSLSocket {
         onLog("Connecting to $host:$port over TLS 1.3…")
+        pmpLocalIpv4Addresses().takeIf { it.isNotEmpty() }?.let {
+            onLog("This device's LAN IP(s): ${it.joinToString(", ")}")
+        }
         val raw = Socket()
         raw.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
+        onLog("TCP connected to ${raw.inetAddress.hostAddress}:$port; starting TLS 1.3 handshake…")
         val ssl = ctx.socketFactory.createSocket(raw, host, port, true) as SSLSocket
-        ssl.soTimeout = CONNECT_TIMEOUT_MS
+        ssl.soTimeout = IO_TIMEOUT_MS
         forceTls13(ssl)
-        ssl.startHandshake()
+        try {
+            ssl.startHandshake()
+        } catch (e: SSLHandshakeException) {
+            throw IllegalStateException(
+                "TLS handshake failed. Check the peer IP/port, that both devices are on the " +
+                    "same Wi-Fi (no AP isolation/VPN), and confirm the fingerprint prompt. ${e.message}", e)
+        } catch (e: SSLException) {
+            throw IllegalStateException("TLS error during handshake: ${e.message}", e)
+        }
         return ssl
     }
 

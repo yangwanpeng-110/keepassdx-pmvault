@@ -12,6 +12,7 @@ import com.kunzisoft.keepass.hardware.HardwareKey
 import com.kunzisoft.keepass.model.DatabaseFile
 import com.kunzisoft.keepass.settings.PreferencesUtil
 import com.kunzisoft.keepass.utils.UriUtil.releaseUriPermission
+import com.kunzisoft.keepass.utils.UriUtil.getDocumentFile
 import com.kunzisoft.keepass.utils.parseUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -146,6 +147,18 @@ class DatabaseFilesViewModel(application: Application) : AndroidViewModel(applic
         mFileDatabaseHistoryAction?.deleteDatabaseFile(databaseFileToDelete) { databaseFileDeleted ->
             databaseFileDeleted?.let { _ ->
                 val context = getApplication<App>()
+                // PmVault: permanently delete the physical database file too. This
+                // runs while the persistable URI permission is still held (content://);
+                // plain file:// paths are handled via DocumentFile.fromFile.
+                runCatching {
+                    databaseFileDeleted.databaseUri?.getDocumentFile(context)?.let { doc ->
+                        if (doc.exists() && !doc.delete()) {
+                            Log.e(TAG, "Physical database file could not be deleted: ${databaseFileDeleted.databaseUri}")
+                        }
+                    }
+                }.onFailure { e ->
+                    Log.e(TAG, "Physical database file deletion failed", e)
+                }
                 // Release database and keyfile URIs permissions
                 val contentResolver = context.contentResolver
                 contentResolver.releaseUriPermission(databaseFileDeleted.databaseUri)

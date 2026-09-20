@@ -6,17 +6,17 @@ on:
     branches: [main]
     tags: ['v*']
     paths:
-      - 'app/src/main/java/com/kunzisoft/keepass/pmp/**'
-      - 'app/src/main/java/com/kunzisoft/keepass/timeout/**'
-      - 'app/src/main/java/com/kunzisoft/keepass/activities/MainCredentialActivity.kt'
+      - 'app/src/main/**'
       - 'app/build.gradle.kts'
+      - 'build.gradle.kts'
+      - 'gradle/**'
       - '.github/workflows/pmp-android.yml'
   pull_request:
     paths:
-      - 'app/src/main/java/com/kunzisoft/keepass/pmp/**'
-      - 'app/src/main/java/com/kunzisoft/keepass/timeout/**'
-      - 'app/src/main/java/com/kunzisoft/keepass/activities/MainCredentialActivity.kt'
+      - 'app/src/main/**'
       - 'app/build.gradle.kts'
+      - 'build.gradle.kts'
+      - 'gradle/**'
       - '.github/workflows/pmp-android.yml'
 
 jobs:

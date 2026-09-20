@@ -34,6 +34,32 @@ object PmVault {
         return d
     }
 
+    /**
+     * Default on-device folder for user databases: the app-specific external
+     * storage directory Android reserves for this app's own files
+     * (Android/data/<package>/files/PmVault). No storage permission is needed,
+     * the system removes it on uninstall, and it is the standard location for
+     * third-party app-owned documents.
+     */
+    fun defaultDatabaseDir(context: Context): File {
+        val root = context.getExternalFilesDir(null) ?: context.filesDir
+        val d = File(root, "PmVault")
+        if (!d.exists()) d.mkdirs()
+        return d
+    }
+
+    /** Next free Database.kdbx / Database_2.kdbx … path inside the default folder. */
+    fun defaultDatabaseFile(context: Context): File {
+        val dir = defaultDatabaseDir(context)
+        var candidate = File(dir, "Database.kdbx")
+        var index = 2
+        while (candidate.exists()) {
+            candidate = File(dir, "Database_$index.kdbx")
+            index++
+        }
+        return candidate
+    }
+
     @Synchronized
     fun deviceKey(): ByteArray {
         val f = File(dir(""), "device.key")
