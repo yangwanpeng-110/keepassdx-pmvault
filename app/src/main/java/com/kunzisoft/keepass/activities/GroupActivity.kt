@@ -62,6 +62,7 @@ import com.kunzisoft.keepass.activities.fragments.SearchFragment
 import com.kunzisoft.keepass.activities.helpers.ExternalFileHelper
 import com.kunzisoft.keepass.activities.legacy.DatabaseLockActivity
 import com.kunzisoft.keepass.pmp.PmpSecondFactorDialog
+import com.kunzisoft.keepass.pmp.PmpOnboarding
 import com.kunzisoft.keepass.pmp.PmpSyncDialog
 import com.kunzisoft.keepass.adapters.BreadcrumbAdapter
 import com.kunzisoft.keepass.credentialprovider.EntrySelectionHelper
@@ -1037,6 +1038,8 @@ class GroupActivity : DatabaseLockActivity() {
             .show(supportFragmentManager, MainCredentialDialogFragment.TAG_ASK_MAIN_CREDENTIAL)
     }
 
+    private var pmpOnboardingShown = false
+
     override fun onResume() {
         super.onResume()
 
@@ -1050,6 +1053,14 @@ class GroupActivity : DatabaseLockActivity() {
         toolbarAction?.updateButtonPaddingStart()
 
         loadGroup()
+
+        // PmVault: first-run security onboarding for a newly created database
+        if (!pmpOnboardingShown) {
+            pmpOnboardingShown = true
+            window?.decorView?.post {
+                runCatching { PmpOnboarding.run(this@GroupActivity) }
+            }
+        }
     }
 
     private fun prepareDatabaseNavMenu() {

@@ -273,9 +273,33 @@ class FileDatabaseSelectActivity : DatabaseModeActivity() {
      * Create a new file by calling the content provider
      */
     private fun createNewFile() {
-        mExternalFileHelper?.createDocument(
-            getString(R.string.database_file_name_default) +
-                getString(R.string.database_file_extension_default))
+        val defaultName = getString(R.string.database_file_name_default) +
+            getString(R.string.database_file_extension_default)
+        try {
+            // PmVault: default new databases to the app-specific external files dir
+            // (Android-recommended third-party file location): no SAF picker, no permission.
+            val base = getExternalFilesDir(null)
+                ?: throw IllegalStateException("external files dir unavailable")
+            val dir = java.io.File(base, "PmVault").apply { if (!exists()) mkdirs() }
+            val stem = getString(R.string.database_file_name_default)
+            val ext = getString(R.string.database_file_extension_default)
+            var file = java.io.File(dir, defaultName)
+            var i = 2
+            while (file.exists()) {
+                file = java.io.File(dir, "${stem}_$i$ext"); i++
+            }
+            if (!file.exists() && !file.createNewFile()) {
+                throw IllegalStateException("could not create $file")
+            }
+            val uri = Uri.fromFile(file)
+            mDatabaseFileUri = uri
+            com.kunzisoft.keepass.pmp.PmVault.setPendingOnboarding(uri.toString())
+            SetMainCredentialDialogFragment.getInstance(true)
+                .show(supportFragmentManager, "passwordDialog")
+        } catch (e: Exception) {
+            Log.e(TAG, "Default-location create failed, falling back to system picker", e)
+            mExternalFileHelper?.createDocument(defaultName)
+        }
     }
 
     private fun fileNoFoundAction(e: FileNotFoundException) {

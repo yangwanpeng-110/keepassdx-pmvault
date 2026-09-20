@@ -68,4 +68,19 @@ object PmVault {
         val f = File(dir(""), "last-db.txt")
         return if (f.exists()) f.readText().trim().ifEmpty { null } else null
     }
+
+    /** Mark a freshly created database that still needs first-run security onboarding. */
+    fun setPendingOnboarding(uri: String?) {
+        val f = File(dir(""), "pending-onboarding.txt")
+        if (uri.isNullOrEmpty()) { if (f.exists()) f.delete() } else f.writeText(uri)
+    }
+
+    /** Returns true once for the given newly created database, then clears the marker. */
+    fun consumePendingOnboarding(currentUri: String?): Boolean {
+        val f = File(dir(""), "pending-onboarding.txt")
+        if (!f.exists()) return false
+        val v = f.readText().trim()
+        if (!currentUri.isNullOrEmpty() && v == currentUri.trim()) { f.delete(); return true }
+        return false
+    }
 }

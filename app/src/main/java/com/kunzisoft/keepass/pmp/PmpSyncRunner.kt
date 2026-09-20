@@ -116,6 +116,7 @@ class PmpSyncRunner(
         server.close() // single connection only
         val ssl = raw as SSLSocket
         ssl.soTimeout = ACCEPT_TIMEOUT_MS
+        forceTls13(ssl)
         ssl.startHandshake()
         return ssl
     }
@@ -126,8 +127,17 @@ class PmpSyncRunner(
         raw.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
         val ssl = ctx.socketFactory.createSocket(raw, host, port, true) as SSLSocket
         ssl.soTimeout = CONNECT_TIMEOUT_MS
+        forceTls13(ssl)
         ssl.startHandshake()
         return ssl
+    }
+
+    private fun forceTls13(s: SSLSocket) {
+        try {
+            s.enabledProtocols = arrayOf("TLSv1.3")
+        } catch (e: Exception) {
+            throw IllegalStateException("TLS 1.3 requires Android 10 or newer: ${e.message}")
+        }
     }
 
     private fun isLan(addr: InetAddress): Boolean {
