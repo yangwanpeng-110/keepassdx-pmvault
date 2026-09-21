@@ -171,7 +171,7 @@ class PmpKdbxStore(
                     val snap = a.snap
                     // Defensive: never let an older peer recreate the built-in empty
                     // entry templates in the root group (Plan A keeps templates local).
-                    if (isEmptyBuiltinTemplate(snap.fields)) return@when
+                    if (!isEmptyBuiltinTemplate(snap.fields)) {
                     val existing = findEntry(a.localUuid)
                     val created = existing == null
                     val entry = existing ?: db.createEntry() ?: continue
@@ -190,8 +190,9 @@ class PmpKdbxStore(
                     vc.tick(selfNode)
                     writeEntryMeta(kx, vc, snap.computeHash(), origin)
                     if (created) db.addEntryTo(entry, root) else db.updateEntry(entry)
-                    upserted++
-                    changed = true
+                        upserted++
+                        changed = true
+                    }
                 }
                 ACT_CONFLICT_COPY -> {
                     val snap = a.snap
