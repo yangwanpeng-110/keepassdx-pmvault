@@ -40,7 +40,12 @@ class DefaultNodeFilter(
                 node.entryKDB?.isMetaStream() != true
             }
             is Group -> {
-                showTemplates || database?.templatesGroup != node
+                // PmVault: hide the templates group while templates are turned
+                // off, and always hide the (removed) recycle-bin group so neither
+                // special row is shown on the home screen.
+                val showTemplatesNode = showTemplates || database?.templatesGroup != node
+                val notRecycleBinNode = database?.recycleBin?.let { node != it } ?: true
+                showTemplatesNode && notRecycleBinNode
             }
             else -> true
         } && (showExpired || !node.isCurrentlyExpires)

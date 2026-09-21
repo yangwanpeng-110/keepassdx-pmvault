@@ -19,7 +19,7 @@
 --><resources>
     <string name="feedback">反馈</string>
     <string name="homepage">主页</string>
-    <string name="about_description">Android 平台 KeePass 密码管理器实现。</string>
+    <string name="about_description">PmVault 是一款本地优先的跨平台密码管理器，基于开源项目 KeePassDX（安卓端）与 KeePassXC（桌面端）二次开发，采用 KDBX4 数据库格式；新增 TOTP 第二因素解锁、生物识别解锁、加密审计日志与局域网 TLS 1.3 同步。不上云、不追踪。</string>
     <string name="accept">接受</string>
     <string name="add_entry">添加条目</string>
     <string name="add_group">添加分组</string>
@@ -39,7 +39,7 @@
     <string name="decrypting_db">正在解密数据库内容…</string>
     <string name="default_checkbox">设为默认数据库</string>
     <string name="digits">数字</string>
-    <string name="html_about_licence">KeePassDX © %1$d Kunzisoft 是一个&lt;strong&gt;不含广告&lt;/strong&gt;的&lt;strong&gt;开源软件&lt;/strong&gt;。\n它是以 &lt;strong&gt;GPLv3&lt;/strong&gt; 许可证依原样提供，不含任何形式的担保。</string>
+    <string name="html_about_licence">PmVault &amp;copy; %1$d 是一款&lt;strong&gt;无广告&lt;/strong&gt;的&lt;strong&gt;开源软件&lt;/strong&gt;。\n基于 KeePassDX（&amp;copy; Kunzisoft）与 KeePassXC 二次开发，遵循 &lt;strong&gt;GPLv3&lt;/strong&gt; 许可证依原样提供，不含任何形式的担保。</string>
     <string name="select_database_file">打开现有密码库</string>
     <string name="entry_accessed">访问时间</string>
     <string name="entry_cancel">取消</string>
@@ -397,7 +397,7 @@
     <string name="hide_expired_entries_summary">过期条目将被隐藏</string>
     <string name="contact">联系我们</string>
     <string name="contribution">贡献</string>
-    <string name="html_about_contribution">为了&lt;strong&gt;维持我们的自由&lt;/strong&gt;、&lt;strong&gt;修复 bugs&lt;/strong&gt;、&lt;strong&gt;添加更多功能&lt;/strong&gt;以及&lt;strong&gt;始终保持项目活跃&lt;/strong&gt;，我们期待您的&lt;strong&gt;贡献&lt;/strong&gt;。</string>
+    <string name="html_about_contribution">PmVault 为独立自研项目。桌面端与安卓端的源代码、问题反馈均位于 &lt;a href="https://github.com/yangwanpeng-110?tab=repositories"&gt;GitHub&lt;/a&gt;。特别致谢上游项目 KeePassDX 与 KeePassXC。</string>
     <string name="auto_focus_search_title">快速搜索</string>
     <string name="auto_focus_search_summary">打开数据库时询问是否进行搜索</string>
     <string name="remember_database_locations_title">记住数据库位置</string>
@@ -653,7 +653,7 @@
     <string name="enable_screenshot_mode_title">截屏模式</string>
     <string name="enable_screenshot_mode_summary">允许第三方应用对 KeePassDX 屏幕进行录制或截图</string>
     <string name="screenshot_mode_banner_text">截屏模式</string>
-    <string name="html_about_privacy">&lt;strong&gt;不获取用户数据&lt;/strong&gt;，此应用不连接任何服务器，仅在本地运行，并充分尊重用户的隐私。</string>
+    <string name="html_about_privacy">&lt;strong&gt;您的数据不会离开您的设备。&lt;/strong&gt;PmVault 离线工作，所有内容仅保存在本地 KDBX4 数据库中；唯一的网络功能是可选的、基于 TLS 1.3 的设备间局域网同步。无账号、无遥测、不上云。</string>
     <string name="merge_success">合并成功完成</string>
     <string name="menu_app_settings_summary">搜索、锁定、历史记录、属性</string>
     <string name="menu_form_filling_settings_summary">键盘、自动填充、剪贴板</string>

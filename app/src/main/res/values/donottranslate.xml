@@ -25,7 +25,7 @@
     *******************
     -->
 
-    <string name="app_name" translatable="false">KeePassDX</string>
+    <string name="app_name" translatable="false">PmVault</string>
     <string name="app_name_part1" translatable="false">KeePass</string>
     <string name="app_name_part2" translatable="false">DX</string>
     <string name="app_name_part3" translatable="false">Pro</string>
@@ -35,10 +35,10 @@
     <string name="keepro_app_id" translatable="false">com.kunzisoft.keepass.pro</string>
     <string name="key_driver_app_id" translatable="false">com.kunzisoft.hardware.key</string>
     <string name="key_driver_url" translatable="false">https://gitlab.com/kunzisoft/android-hardware-key-driver/-/releases/</string>
-    <string name="contribution_url" translatable="false">https://www.keepassdx.com/#donation</string>
-    <string name="homepage_url" translatable="false">https://www.keepassdx.com</string>
+    <string name="contribution_url" translatable="false">https://github.com/yangwanpeng-110/keepassdx-pmvault</string>
+    <string name="homepage_url" translatable="false">https://github.com/yangwanpeng-110/keepassdx-pmvault</string>
     <string name="external_icon_url" translatable="false">https://www.keepassdx.com/#icons</string>
-    <string name="issues_url" translatable="false">https://github.com/Kunzisoft/KeePassDX/issues</string>
+    <string name="issues_url" translatable="false">https://github.com/yangwanpeng-110/keepassdx-pmvault/issues</string>
     <string name="credentials_explanation_url" translatable="false">https://github.com/Kunzisoft/KeePassDX/wiki/Credentials</string>
     <string name="otp_explanation_url" translatable="false">https://github.com/Kunzisoft/KeePassDX/wiki/OTP</string>
     <string name="device_unlock_explanation_url" translatable="false">https://github.com/Kunzisoft/KeePassDX/wiki/Device-Unlocking</string>
@@ -53,7 +53,7 @@
     <!-- File Path -->
     <string name="database_file_name_default" translatable="false">keepass</string>
     <string name="database_file_extension_default" translatable="false">.kdbx</string>
-    <string name="database_default_name" translatable="false">KeePassDX Database</string>
+    <string name="database_default_name" translatable="false">PmVault Database</string>
     <string name="app_properties_file_name" translatable="false">keepassdx_%1$s.properties</string>
 
     <!--

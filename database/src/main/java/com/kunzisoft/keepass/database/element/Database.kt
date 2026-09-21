@@ -454,8 +454,9 @@ open class Database {
         get() = mDatabaseKDBX != null
 
     val isRecycleBinEnabled: Boolean
-        // Backup is always enabled in KDB database
-        get() = mDatabaseKDB != null || mDatabaseKDBX?.isRecycleBinEnabled ?: false
+        // PmVault: the recycle-bin feature has been removed (deletions are
+        // permanent), so it is never enabled regardless of the stored KDBX flag.
+        get() = false
 
     fun enableRecycleBin(enable: Boolean, recyclerBinTitle: String) {
         mDatabaseKDBX?.isRecycleBinEnabled = enable
@@ -500,6 +501,21 @@ open class Database {
         get() = mDatabaseKDBX?.isTemplatesGroupEnabled() ?: false
 
     fun enableTemplates(enable: Boolean, templatesGroupName: String) {
+        if (!enable) {
+            // PmVault: physically remove the templates group (and its built-in
+            // template entries) when the switch is turned off. Upstream only
+            // cleared the designated-group UUID, which left the group (and the
+            // home "Templates" row) visible as an ordinary group.
+            val groupsToRemove = mutableListOf<Group>()
+            templatesGroup?.let { groupsToRemove.add(it) }
+            getAllGroupsWithoutRoot()
+                .firstOrNull { candidate ->
+                    candidate.title == templatesGroupName
+                        && groupsToRemove.none { it.nodeId == candidate.nodeId }
+                }
+                ?.let { groupsToRemove.add(it) }
+            groupsToRemove.forEach { deleteGroup(it) }
+        }
         mDatabaseKDBX?.enableTemplatesGroup(enable, templatesGroupName)
         mDatabaseKDBX?.entryTemplatesGroupChanged = DateInstant()
     }
