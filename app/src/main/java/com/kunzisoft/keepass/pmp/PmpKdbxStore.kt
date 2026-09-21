@@ -44,7 +44,25 @@ class PmpKdbxStore(
         const val K_TOMBS = "PM:Tombstones"
         private const val PASSWORD_KEY = "Password"
         private const val TITLE_KEY = "Title"
+        private const val USERNAME_KEY = "UserName"
+        private const val URL_KEY = "URL"
         private const val CONFLICT_PREFIX = " (conflict copy "
+
+        // KeePassDX built-in entry-template blueprint titles (Plan A: local only).
+        private val BUILTIN_TEMPLATE_TITLES = setOf(
+            "Email", "Wi-Fi", "Notes", "ID Card",
+            "Debit / Credit Card", "Bank", "Cryptocurrency wallet"
+        )
+
+        // True only for an empty built-in template (title matches and no credential
+        // or URL), so real user entries are never mistaken for blueprints.
+        fun isEmptyBuiltinTemplate(fields: JSONObject): Boolean {
+            val title = fields.optString(TITLE_KEY).trim()
+            if (title !in BUILTIN_TEMPLATE_TITLES) return false
+            return fields.optString(USERNAME_KEY).isEmpty()
+                && fields.optString(PASSWORD_KEY).isEmpty()
+                && fields.optString(URL_KEY).isEmpty()
+        }
     }
 
     private val selfNode: String by lazy { PmpIdentityStore.loadOrCreate().nodeId }
@@ -91,6 +109,11 @@ class PmpKdbxStore(
         root.doForEachChild(object : NodeHandler<Entry>() {
             override fun operate(entry: Entry): Boolean {
                 val kx = entry.entryKDBX ?: return true
+                // PmVault Plan A: the built-in Templates group (entry blueprints such as
+                // Wi-Fi / Bank / Email) is a local authoring aid and must never be synced.
+                if (db.entryIsTemplate(entry)) return true
+                // Defensive: never sync anything inside a recycle bin either.
+                entry.parent?.let { if (db.groupIsInRecycleBin(it)) return true }
                 val fields = JSONObject()
                 for (f in kx.getFields()) {
                     // PM:* bookkeeping lives in CustomData, never in synced attributes.
@@ -146,6 +169,9 @@ class PmpKdbxStore(
             when (a.kind) {
                 ACT_UPSERT -> {
                     val snap = a.snap
+                    // Defensive: never let an older peer recreate the built-in empty
+                    // entry templates in the root group (Plan A keeps templates local).
+                    if (isEmptyBuiltinTemplate(snap.fields)) return@when
                     val existing = findEntry(a.localUuid)
                     val created = existing == null
                     val entry = existing ?: db.createEntry() ?: continue

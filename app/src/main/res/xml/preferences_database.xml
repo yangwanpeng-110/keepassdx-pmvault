@@ -74,22 +74,7 @@
             android:summary="@string/database_data_remove_unlinked_attachments_summary"/>
     </PreferenceCategory>
 
-    <PreferenceCategory
-        android:key="@string/database_category_recycle_bin_key"
-        android:title="@string/recycle_bin">
-
-        <SwitchPreferenceCompat
-            android:key="@string/recycle_bin_enable_key"
-            android:persistent="false"
-            android:title="@string/recycle_bin_title"
-            android:summary="@string/recycle_bin_summary"
-            android:checked="false"/>
-        <com.kunzisoft.keepass.settings.preference.DialogListExplanationPreference
-            android:key="@string/recycle_bin_group_key"
-            android:persistent="false"
-            android:title="@string/recycle_bin_group_title"/>
-
-    </PreferenceCategory>
+    <!-- PmVault: recycle-bin feature removed; deletions are permanent. Category deleted. -->
 
     <PreferenceCategory
         android:key="@string/database_category_templates_key"

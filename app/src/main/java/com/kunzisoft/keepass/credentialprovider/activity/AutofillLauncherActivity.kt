@@ -30,8 +30,10 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.kunzisoft.keepass.R
+import com.kunzisoft.keepass.activities.EntryEditActivity
 import com.kunzisoft.keepass.activities.FileDatabaseSelectActivity
 import com.kunzisoft.keepass.activities.GroupActivity
 import com.kunzisoft.keepass.activities.legacy.DatabaseModeActivity
@@ -125,6 +127,9 @@ class AutofillLauncherActivity : DatabaseModeActivity() {
                             activityResultLauncher = mAutofillRegistrationActivityResultLauncher
                         )
                     }
+                    is CredentialLauncherViewModel.CredentialState.PromptUpdateEntry -> {
+                        showPasswordUpdatePrompt(uiState)
+                    }
                     is CredentialLauncherViewModel.CredentialState.LaunchFileDatabaseSelectActivityForSelection -> {
                         FileDatabaseSelectActivity.launchForSelection(
                             context = this@AutofillLauncherActivity,
@@ -177,6 +182,54 @@ class AutofillLauncherActivity : DatabaseModeActivity() {
             R.string.autofill_inline_suggestions_keyboard,
             Toast.LENGTH_SHORT
         ).show()
+    }
+
+    /**
+     * PmVault: Edge-like prompt shown when the submitted password for an existing
+     * site + username differs from the saved entry. Update opens the matched entry
+     * prefilled with the new password (one confirm to save); create-new falls back to
+     * the normal registration list.
+     */
+    private fun showPasswordUpdatePrompt(
+        state: CredentialLauncherViewModel.CredentialState.PromptUpdateEntry
+    ) {
+        val site = state.registerInfo.searchInfo.webDomain
+            ?: state.registerInfo.searchInfo.applicationId.orEmpty()
+        val username = state.registerInfo.username.orEmpty()
+        val title = state.entry.title.ifEmpty { site }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.pmp_update_password_title)
+            .setMessage(
+                getString(
+                    R.string.pmp_update_password_message,
+                    site, username, title
+                )
+            )
+            .setPositiveButton(R.string.pmp_update_password_confirm) { _, _ ->
+                EntryEditActivity.launchForRegistration(
+                    context = this@AutofillLauncherActivity,
+                    database = state.database,
+                    activityResultLauncher = mAutofillRegistrationActivityResultLauncher,
+                    nodeId = state.entry.nodeId,
+                    registerInfo = state.registerInfo,
+                    typeMode = state.typeMode,
+                    registrationType = EntryEditActivity.RegistrationType.UPDATE
+                )
+            }
+            .setNegativeButton(R.string.pmp_update_password_new_entry) { _, _ ->
+                GroupActivity.launchForRegistration(
+                    context = this@AutofillLauncherActivity,
+                    database = state.database,
+                    registerInfo = state.registerInfo,
+                    typeMode = state.typeMode,
+                    activityResultLauncher = mAutofillRegistrationActivityResultLauncher
+                )
+            }
+            .setNeutralButton(android.R.string.cancel) { _, _ ->
+                autofillLauncherViewModel.cancelResult()
+            }
+            .setCancelable(false)
+            .show()
     }
 
     companion object {

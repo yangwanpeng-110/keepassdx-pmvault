@@ -212,7 +212,8 @@
     <string name="hide_expired_entries_key" translatable="false">hide_expired_entries_key</string>
     <bool name="hide_expired_entries_default" translatable="false">false</bool>
     <string name="hide_templates_key" translatable="false">hide_templates_key</string>
-    <bool name="hide_templates_default" translatable="false">true</bool>
+    <!-- PmVault: keep the built-in entry templates visible by default. -->
+    <bool name="hide_templates_default" translatable="false">false</bool>
     <string name="colorize_password_key" translatable="false">colorize_password_key</string>
     <bool name="colorize_password_default" translatable="false">true</bool>
     <string name="list_entries_show_username_key" translatable="false">list_entries_show_username_key</string>

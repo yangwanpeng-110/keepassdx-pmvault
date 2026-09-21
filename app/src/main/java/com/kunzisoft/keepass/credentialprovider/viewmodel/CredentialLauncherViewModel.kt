@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.kunzisoft.keepass.credentialprovider.SpecialMode
 import com.kunzisoft.keepass.credentialprovider.TypeMode
 import com.kunzisoft.keepass.database.ContextualDatabase
+import com.kunzisoft.keepass.model.EntryInfo
 import com.kunzisoft.keepass.model.RegisterInfo
 import com.kunzisoft.keepass.model.SearchInfo
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -127,6 +128,14 @@ abstract class CredentialLauncherViewModel(application: Application): AndroidVie
         data class LaunchGroupActivityForRegistration(
             val database: ContextualDatabase,
             val registerInfo: RegisterInfo?,
+            val typeMode: TypeMode
+        ): CredentialState()
+        // PmVault: same site + same username but a different submitted password;
+        // ask the user whether to update that existing entry (Edge-like behavior).
+        data class PromptUpdateEntry(
+            val database: ContextualDatabase,
+            val registerInfo: RegisterInfo,
+            val entry: EntryInfo,
             val typeMode: TypeMode
         ): CredentialState()
         data class LaunchFileDatabaseSelectActivityForSelection(

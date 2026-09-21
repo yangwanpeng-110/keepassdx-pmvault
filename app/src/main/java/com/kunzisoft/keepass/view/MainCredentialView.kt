@@ -28,6 +28,7 @@ import android.text.TextWatcher
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.CompoundButton
 import android.widget.EditText
@@ -69,6 +70,12 @@ class MainCredentialView @JvmOverloads constructor(context: Context,
         keyFileSelectionView = findViewById(R.id.keyfile_selection)
         checkboxHardwareView = findViewById(R.id.hardware_key_checkbox)
         hardwareKeySelectionView = findViewById(R.id.hardware_key_selection)
+
+        // PmVault: hardware security keys (YubiKey challenge-response) are not part of
+        // the product; hide the whole row on every credential screen and never emit one.
+        findViewById<View>(R.id.container_hardware_key)?.visibility = View.GONE
+        checkboxHardwareView.visibility = View.GONE
+        hardwareKeySelectionView.visibility = View.GONE
 
         val onEditorActionListener = object : TextView.OnEditorActionListener {
             override fun onEditorAction(v: TextView?, actionId: Int, event: KeyEvent?): Boolean {
@@ -195,8 +202,8 @@ class MainCredentialView @JvmOverloads constructor(context: Context,
             } else null
             this.keyFileUri = if (checkboxKeyFileView.isChecked)
                 keyFileSelectionView.uri else null
-            this.hardwareKey = if (checkboxHardwareView.isChecked)
-                hardwareKeySelectionView.hardwareKey else null
+            // PmVault: hardware keys are disabled, always null.
+            this.hardwareKey = null
         }
     }
 

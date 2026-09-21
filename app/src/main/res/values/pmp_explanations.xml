@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PmVault: in-app explanation pages for form-filling settings.
+  These replace the external wiki links previously opened by the info icons.
+-->
+<resources>
+    <string name="pmp_info_magikeyboard_title">Magic keyboard</string>
+    <string name="pmp_info_magikeyboard_message">The magic keyboard is a built-in input method that lets you pick credentials without leaving the current app.\n\nWhen a text field is focused, a persistent notification lets you open the keyboard, search your database and insert the username, password or other field directly.\n\nIt never connects to the network and never reads what you type; it only fills the value you explicitly choose.</string>
+
+    <string name="pmp_info_clipboard_title">Clipboard</string>
+    <string name="pmp_info_clipboard_message">Copy actions place the value on the system clipboard temporarily.\n\nFor security the clipboard is cleared automatically after the configured timeout, and sensitive values are never logged.\n\nOn Android 12 and later the system may show a preview or allow other apps to read the clipboard; prefer in-place autofill when it is available.</string>
+
+    <string name="pmp_info_autofill_title">Autofill service</string>
+    <string name="pmp_info_autofill_message">PmVault can act as the system Autofill service (Android 8+).\n\nWhen you tap a login field, Android shows matching entries above the keyboard; selecting one fills the form. On a save or password-change screen PmVault can offer to save the new entry or update the password of an existing one, similar to a browser password manager.\n\nEnable it in system settings and keep the database unlocked for filling; saving does not require unlocking.</string>
+
+    <string name="pmp_info_passkeys_title">Passkeys</string>
+    <string name="pmp_info_passkeys_message">Passkeys replace passwords with a key pair stored in your database.\n\nThe private key never leaves the device; only a public key is registered with the website, so phishing and leaked-server passwords no longer apply.\n\nPasskey support requires a recent Android version and a website/app that explicitly supports passkeys (WebAuthn / FIDO2).</string>
+
+    <!-- Edge-like proactive password update on autofill save -->
+    <string name="pmp_update_password_title">Update saved password?</string>
+    <string name="pmp_update_password_message">A new password was submitted for %2$s on %1$s.\n\nThe saved entry \"%3$s\" stores a different password for this account. Update it with the new password, or save the credentials as a new entry?</string>
+    <string name="pmp_update_password_confirm">Update password</string>
+    <string name="pmp_update_password_new_entry">Save as new entry</string>
+</resources>

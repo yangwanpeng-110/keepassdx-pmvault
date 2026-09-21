@@ -91,12 +91,7 @@
             android:summary="@string/remember_keyfile_locations_summary"
             android:dependency="@string/remember_database_locations_key"
             android:defaultValue="@bool/remember_keyfile_locations_default"/>
-        <SwitchPreferenceCompat
-            android:key="@string/remember_hardware_key_key"
-            android:title="@string/remember_hardware_key_title"
-            android:summary="@string/remember_hardware_key_summary"
-            android:dependency="@string/remember_database_locations_key"
-            android:defaultValue="@bool/remember_hardware_key_default"/>
+        <!-- PmVault: hardware-key (YubiKey) remembering removed together with the feature. -->
         <SwitchPreferenceCompat
             android:key="@string/show_recent_files_key"
             android:title="@string/show_recent_files_title"

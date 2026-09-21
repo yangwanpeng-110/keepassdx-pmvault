@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PmVault：表单填充设置的应用内解释页（替代原先的外部网页链接）。
+-->
+<resources>
+    <string name="pmp_info_magikeyboard_title">魔术键盘</string>
+    <string name="pmp_info_magikeyboard_message">魔术键盘是一个内置输入法，可让你在不离开当前应用的情况下选择凭据。\n\n当输入框获得焦点时，常驻通知可打开该键盘，搜索数据库并直接插入用户名、密码或其他字段。\n\n它不联网，也不会读取你输入的内容，只会填入你明确选择的值。</string>
+
+    <string name="pmp_info_clipboard_title">剪贴板</string>
+    <string name="pmp_info_clipboard_message">复制操作会把内容临时放到系统剪贴板。\n\n为保证安全，剪贴板会在设定的超时时间后自动清空，敏感内容也不会写入日志。\n\n在 Android 12 及以上版本，系统可能显示剪贴板预览或允许其他应用读取；在支持自动填充时，请优先使用原地自动填充。</string>
+
+    <string name="pmp_info_autofill_title">自动填充服务</string>
+    <string name="pmp_info_autofill_message">PmVault 可作为系统自动填充服务（Android 8 及以上）。\n\n点击登录输入框时，Android 会在键盘上方显示匹配的条目，选择后即可填充表单。在注册或修改密码的页面，PmVault 可像浏览器密码管理一样，提示保存新条目或更新已有条目的密码。\n\n请在系统设置中启用；填充需要解锁数据库，保存则无需解锁。</string>
+
+    <string name="pmp_info_passkeys_title">通行密钥（Passkeys）</string>
+    <string name="pmp_info_passkeys_message">通行密钥用存储在数据库中的密钥对替代密码。\n\n私钥不会离开设备，网站只保存公钥，因此可避免钓鱼和服务器密码泄露。\n\n通行密钥需要较新的 Android 版本，并且网站或应用本身支持通行密钥（WebAuthn / FIDO2）。</string>
+
+    <!-- 自动填充保存时，类 Edge 的密码变更主动更新 -->
+    <string name="pmp_update_password_title">更新已保存的密码？</string>
+    <string name="pmp_update_password_message">在 %1$s 上检测到账号 %2$s 提交了新密码。\n\n已保存条目“%3$s”中该账号的密码与新密码不同。要将其更新为新密码，还是另存为一条新条目？</string>
+    <string name="pmp_update_password_confirm">更新密码</string>
+    <string name="pmp_update_password_new_entry">另存为新条目</string>
+</resources>

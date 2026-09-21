@@ -173,6 +173,12 @@ class SetMainCredentialDialogFragment : DatabaseDialogFragment() {
             hardwareKeyCheckBox = rootView.findViewById(R.id.hardware_key_checkbox)
             hardwareKeySelectionView = rootView.findViewById(R.id.hardware_key_selection)
 
+            // PmVault: hardware security keys (YubiKey challenge-response) are removed from
+            // the product; hide the card and force the credential to carry no hardware key.
+            rootView.findViewById<View>(R.id.card_view_hardware_key)?.visibility = View.GONE
+            hardwareKeyCheckBox.isChecked = false
+            hardwareKeySelectionView.hardwareKey = null
+
             mExternalFileHelper = ExternalFileHelper(this)
             mExternalFileHelper?.buildCreateDocument { createdFileUri ->
                 createdFileUri?.let { uri ->
@@ -215,7 +221,7 @@ class SetMainCredentialDialogFragment : DatabaseDialogFragment() {
                     mSetMainCredentialViewModel.assignCredential(
                         password = passwordEditView.passwordCharArray,
                         uri = keyFileSelectionView.uri,
-                        hardwareKey = hardwareKeySelectionView.hardwareKey
+                        hardwareKey = null
                     )
 
                     val repeatPassword = CharArray(passwordRepeatView.length())
@@ -224,7 +230,7 @@ class SetMainCredentialDialogFragment : DatabaseDialogFragment() {
                     mSetMainCredentialViewModel.validateAndApprove(
                         passwordChecked = passwordCheckBox.isChecked,
                         keyFileChecked = keyFileCheckBox.isChecked,
-                        hardwareKeyChecked = hardwareKeyCheckBox.isChecked,
+                        hardwareKeyChecked = false,
                         repeatPassword,
                         allowNoMasterKey
                     ) { hardwareKey ->

@@ -23,6 +23,7 @@ import com.kunzisoft.keepass.credentialprovider.magikeyboard.MagikeyboardService
 import com.kunzisoft.keepass.database.ContextualDatabase
 import com.kunzisoft.keepass.database.exception.RegisterInReadOnlyDatabaseException
 import com.kunzisoft.keepass.database.helper.SearchHelper
+import com.kunzisoft.keepass.model.EntryInfo
 import com.kunzisoft.keepass.model.RegisterInfo
 import com.kunzisoft.keepass.model.SearchInfo
 import com.kunzisoft.keepass.services.ClipboardEntryNotificationService
@@ -219,15 +220,28 @@ class AutofillLauncherViewModel(application: Application): CredentialLauncherVie
                 context = getApplication(),
                 database = database,
                 searchInfo = searchInfo,
-                onItemsFound = { openedDatabase, _ ->
+                onItemsFound = { openedDatabase, items ->
                     if (!readOnly) {
-                        // Show the database UI to select the entry
+                        // PmVault: Edge-like proactive password update. If the submitted
+                        // credentials match an existing entry by site + username but the
+                        // password changed, ask before overwriting that entry.
+                        val updateCandidate = findPasswordUpdateCandidate(items, registerInfo)
                         mCredentialUiState.value =
-                            CredentialState.LaunchGroupActivityForRegistration(
-                                database = openedDatabase,
-                                registerInfo = registerInfo,
-                                typeMode = TypeMode.AUTOFILL
-                            )
+                            if (updateCandidate != null) {
+                                CredentialState.PromptUpdateEntry(
+                                    database = openedDatabase,
+                                    registerInfo = registerInfo,
+                                    entry = updateCandidate,
+                                    typeMode = TypeMode.AUTOFILL
+                                )
+                            } else {
+                                // Show the database UI to select the entry
+                                CredentialState.LaunchGroupActivityForRegistration(
+                                    database = openedDatabase,
+                                    registerInfo = registerInfo,
+                                    typeMode = TypeMode.AUTOFILL
+                                )
+                            }
                     } else {
                         mCredentialUiState.value = CredentialState.ShowError(
                             RegisterInReadOnlyDatabaseException()
@@ -261,6 +275,31 @@ class AutofillLauncherViewModel(application: Application): CredentialLauncherVie
         } else {
             mUiState.value = UIState.ShowBlockRestartMessage
         }
+    }
+
+    /**
+     * PmVault: return the unique existing entry that matches the submitted username on
+     * the same site but currently stores a different (non-empty) password. Returns null
+     * when there is no unambiguous changed-password candidate (new account, unknown
+     * username, identical password, empty form values) so the ordinary save flow runs.
+     */
+    private fun findPasswordUpdateCandidate(
+        items: List<EntryInfo>,
+        registerInfo: RegisterInfo
+    ): EntryInfo? {
+        val newUsername = registerInfo.username?.trim().orEmpty()
+        val newPassword = registerInfo.password?.let { String(it) }.orEmpty()
+        if (newUsername.isEmpty() || newPassword.isEmpty()) {
+            return null
+        }
+        val matches = items.filter { item ->
+            item.username.trim().equals(newUsername, ignoreCase = true)
+                && item.password.isNotEmpty()
+                && !String(item.password).equals(newPassword, ignoreCase = false)
+        }
+        // Only auto-prompt when a single entry is involved; ambiguity falls back to
+        // the manual registration list so the user picks the right record.
+        return matches.singleOrNull()
     }
 
     override fun manageRegistrationResult(activityResult: ActivityResult) {

@@ -1191,25 +1191,13 @@ open class Database {
     }
 
     fun canRecycle(entry: Entry): Boolean {
-        var canRecycle: Boolean? = null
-        entry.entryKDB?.let {
-            canRecycle = mDatabaseKDB?.canRecycle(it)
-        }
-        entry.entryKDBX?.let {
-            canRecycle = mDatabaseKDBX?.canRecycle(it)
-        }
-        return canRecycle ?: false
+        // PmVault: recycle bin removed; deletions are always permanent.
+        return false
     }
 
     fun canRecycle(group: Group): Boolean {
-        var canRecycle: Boolean? = null
-        group.groupKDB?.let {
-            canRecycle = mDatabaseKDB?.canRecycle(it)
-        }
-        group.groupKDBX?.let {
-            canRecycle = mDatabaseKDBX?.canRecycle(it)
-        }
-        return canRecycle ?: false
+        // PmVault: recycle bin removed; deletions are always permanent.
+        return false
     }
 
     fun recycle(entry: Entry, recyclerBinTitle: String) {

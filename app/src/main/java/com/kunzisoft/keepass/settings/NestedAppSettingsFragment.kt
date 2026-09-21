@@ -132,7 +132,7 @@ class NestedAppSettingsFragment : NestedSettingsFragment() {
         }
 
         findPreference<Preference>(getString(R.string.magic_keyboard_explanation_key))?.setOnPreferenceClickListener {
-            context?.openUrl(R.string.magic_keyboard_explanation_url)
+            showPmpInfo(R.string.pmp_info_magikeyboard_title, R.string.pmp_info_magikeyboard_message)
             false
         }
 
@@ -148,7 +148,7 @@ class NestedAppSettingsFragment : NestedSettingsFragment() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             findPreference<Preference>(getString(R.string.passkeys_explanation_key))?.setOnPreferenceClickListener {
-                context?.openUrl(R.string.passkeys_explanation_url)
+                showPmpInfo(R.string.pmp_info_passkeys_title, R.string.pmp_info_passkeys_message)
                 false
             }
 
@@ -160,7 +160,7 @@ class NestedAppSettingsFragment : NestedSettingsFragment() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             findPreference<Preference>(getString(R.string.autofill_explanation_key))?.setOnPreferenceClickListener {
-                context?.openUrl(R.string.autofill_explanation_url)
+                showPmpInfo(R.string.pmp_info_autofill_title, R.string.pmp_info_autofill_message)
                 false
             }
 
@@ -171,7 +171,7 @@ class NestedAppSettingsFragment : NestedSettingsFragment() {
         }
 
         findPreference<Preference>(getString(R.string.clipboard_explanation_key))?.setOnPreferenceClickListener {
-            context?.openUrl(R.string.clipboard_explanation_url)
+            showPmpInfo(R.string.pmp_info_clipboard_title, R.string.pmp_info_clipboard_message)
             false
         }
 
@@ -209,6 +209,15 @@ class NestedAppSettingsFragment : NestedSettingsFragment() {
             }
             true
         }
+    }
+
+    // PmVault: in-app explanation dialog (replaces external wiki links).
+    private fun showPmpInfo(titleRes: Int, messageRes: Int) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(getString(titleRes))
+            .setMessage(getString(messageRes))
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     private fun onCreateDeviceUnlockPreferences(rootKey: String?) {

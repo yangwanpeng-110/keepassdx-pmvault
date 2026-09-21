@@ -13,6 +13,11 @@
 package com.kunzisoft.keepass.pmp
 
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Notification
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.text.InputType
@@ -25,6 +30,7 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -232,6 +238,7 @@ class PmpSyncDialog : DialogFragment() {
                     "同步完成：更新 ${report.upserted}，删除 ${report.deleted}，" +
                         "冲突副本 ${report.conflictCopies}。"
                 )
+                notifySyncComplete(report)
                 if (changes > 0) {
                     appendLog("正在保存数据库…")
                     (act as? DatabaseLockActivity)?.saveDatabase()
@@ -244,8 +251,42 @@ class PmpSyncDialog : DialogFragment() {
         }
     }
 
+    /** Post a system notification (and a toast fallback) when sync finishes. */
+    private fun notifySyncComplete(report: SyncReport) {
+        val ctx = context ?: return
+        val text = "局域网同步完成：更新 ${report.upserted}，删除 ${report.deleted}，" +
+            "冲突副本 ${report.conflictCopies}"
+        Toast.makeText(ctx, text, Toast.LENGTH_LONG).show()
+        try {
+            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID, "局域网同步", NotificationManager.IMPORTANCE_LOW
+                ).apply { description = "PmVault 局域网同步结果提醒" }
+                nm.createNotificationChannel(channel)
+            }
+            val n = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(ctx, CHANNEL_ID)
+            } else {
+                @Suppress("DEPRECATION")
+                Notification.Builder(ctx)
+            }
+                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setContentTitle("PmVault 同步完成")
+                .setContentText(text)
+                .setAutoCancel(true)
+                .build()
+            nm.notify(NOTIF_ID, n)
+        } catch (_: Exception) {
+            // Notifications may be blocked; the toast and dialog log still inform the user.
+        }
+    }
+
     companion object {
         const val TAG = "PmpSyncDialog"
+        private const val CHANNEL_ID = "pmp_sync"
+        private const val NOTIF_ID = 0x706D
         fun show(fm: androidx.fragment.app.FragmentManager) {
             PmpSyncDialog().show(fm, TAG)
         }
