@@ -98,6 +98,8 @@ class EntrySelectionLauncherActivity : DatabaseModeActivity() {
             entrySelectionViewModel.credentialUiState.collect { uiState ->
                 when (uiState) {
                     is CredentialLauncherViewModel.CredentialState.Loading -> {}
+                    // PmVault: password-update prompts are only handled by the autofill launcher.
+                    is CredentialLauncherViewModel.CredentialState.PromptUpdateEntry -> {}
                     is CredentialLauncherViewModel.CredentialState.LaunchGroupActivityForSelection -> {
                         GroupActivity.launchForSelection(
                             context = this@EntrySelectionLauncherActivity,
